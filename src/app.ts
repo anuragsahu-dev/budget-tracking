@@ -1,0 +1,64 @@
+import express from "express";
+import cors from "cors";
+import hpp from "hpp";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
+
+import { redisRateLimiter } from "./database/redis";
+import { globalErrorHandler, ApiError } from "./middlewares/error.middleware";
+
+import healthRouter from "./routes/healthCheck.route";
+
+const app = express();
+
+// security middleware
+app.use(helmet());
+app.use(hpp());
+
+// --- Rate Limiter ---
+// Global limiter for all /api routes
+app.use(
+  "/api",
+  redisRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    keyPrefix: "global:",
+    message: "Too many requests, please try again later.",
+  })
+);
+
+// body parser
+app.use(express.json({ limit: "16kb" }));
+app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(cookieParser());
+
+// cor configuration
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "HEAD", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "device-remember-token",
+      "Access-Control-Allow-Origin",
+      "Origin",
+      "Accept",
+    ],
+  })
+);
+
+// api routes
+app.use("/healthCheck", healthRouter);
+
+// 404 handler
+app.use((_req, _res, next) => {
+  next(new ApiError(404, "Route not found"));
+});
+
+// global error handler
+app.use(globalErrorHandler);
+
+export default app;

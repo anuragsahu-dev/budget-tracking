@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 21
+    },
+    "auditLog": "C:\\Users\\HP\\OneDrive\\Desktop\\Main\\Project 4\\02-Budget-Tracking\\logs\\.c1b727c3b46aac45298d1b7c336d246c37b16ef1-audit.json",
+    "files": [
+        {
+            "date": 1758472453380,
+            "name": "C:\\Users\\HP\\OneDrive\\Desktop\\Main\\Project 4\\02-Budget-Tracking\\logs\\error-2025-09-21.log",
+            "hash": "87f7c342a5a91427b5667fe981c9d0348984b8e2d4848a8a89e0d22b4e2e7fad"
+        }
+    ],
+    "hashType": "sha256"
+}

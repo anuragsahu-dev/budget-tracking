@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "commonjs",
+        "outDir": "dist",
+        "removeComments": true,
+        "strict": true,
+        "esModuleInterop": true, // makes import and export workable properly
+        "forceConsistentCasingInFileNames": true, // When enabled, TypeScript will check your imports and file names and throw an error if the case does not match exactly.
+        "skipLibCheck": true
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}
