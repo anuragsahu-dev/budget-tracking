@@ -1,0 +1,19 @@
+FROM node:22
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install 
+
+# Copy app files
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Expose port
+EXPOSE 3000
+
+CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && npm run dev"]

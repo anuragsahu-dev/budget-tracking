@@ -51,4 +51,7 @@ export const config = {
     port: Number(getEnvVariable("REDIS_PORT")),
     host: getEnvVariable("REDIS_HOST"),
   },
+  password: {
+    salt_rounds: Number(getEnvVariable("SALT_ROUNDS"))
+  }
 } as const; // this as const make this object only readonly

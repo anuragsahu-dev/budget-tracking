@@ -1,0 +1,31 @@
+services:
+  redis:
+    image: redis:8
+    ports:
+      - 6379:6379
+    restart: unless-stopped
+    networks:
+      - budget-net
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    networks:
+      - budget-net
+    restart: unless-stopped
+
+networks:
+  budget-net:
+    driver: bridge
