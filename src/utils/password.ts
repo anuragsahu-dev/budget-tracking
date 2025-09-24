@@ -3,26 +3,29 @@ import logger from "../config/logger";
 import { config } from "../config/config";
 import { ApiError } from "../middlewares/error.middleware";
 
-export const createPasswordHash = async (
-  plainPassword: string
-): Promise<string> => {
-  return bcrypt.hash(plainPassword, config.password.salt_rounds); 
+export const createHash = async (plainValue: string): Promise<string> => {
+  try {
+    const saltRounds = config.bcrypt.salt_rounds;
+    return await bcrypt.hash(plainValue, saltRounds);
+  } catch (error) {
+    logger.error("Error occured when trying to hash plain string", { error });
+    throw new ApiError(500, "Internal server error");
+  }
 };
 
-export const verifyPassword = async (
-  userPassword: string,
-  dbPassword: string
+export const verifyHash = async (
+  plainValue: string,
+  hashValue: string
 ): Promise<boolean> => {
   try {
-    return await bcrypt.compare(userPassword, dbPassword);
+    return await bcrypt.compare(plainValue, hashValue);
   } catch (error) {
-    logger.error("Password comparison failed due to internal server problem", {
+    logger.error("Hashing comparison failed due to internal server problem", {
       error,
     });
     throw new ApiError(500, "Internal server error");
   }
 };
-
 
 /*
 ✅ Better: Remove await unless you need try/catch 

@@ -5,15 +5,18 @@ import type { Request, Response, NextFunction } from "express";
 import { JwtPayload } from "jsonwebtoken";
 
 import { config } from "../config/config";
+import { Role } from "@prisma/client";
 
 declare module "express-serve-static-core" {
   interface Request {
     userId?: string;
+    userRole?: Role;
   }
 }
 
 interface AccessTokenPayload extends JwtPayload {
   id: string;
+  role: Role;
 }
 
 export const verifyJWT = (req: Request, _res: Response, next: NextFunction) => {
@@ -34,6 +37,7 @@ export const verifyJWT = (req: Request, _res: Response, next: NextFunction) => {
     }
 
     req.userId = decoded.id;
+    req.userRole = decoded.role;
     next();
   } catch (_error) {
     return next(new ApiError(401, "Authentication failed. Please log in."));

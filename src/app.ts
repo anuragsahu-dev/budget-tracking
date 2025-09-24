@@ -8,6 +8,7 @@ import { redisRateLimiter } from "./database/redis";
 import { globalErrorHandler, ApiError } from "./middlewares/error.middleware";
 
 import healthRouter from "./routes/healthCheck.route";
+import userRouter from "./routes/user.route";
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use(
 
 // api routes
 app.use("/healthCheck", healthRouter);
+app.use("/api/v1/users", userRouter);
 
 // 404 handler
 app.use((_req, _res, next) => {

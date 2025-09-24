@@ -51,7 +51,10 @@ export const config = {
     port: Number(getEnvVariable("REDIS_PORT")),
     host: getEnvVariable("REDIS_HOST"),
   },
-  password: {
-    salt_rounds: Number(getEnvVariable("SALT_ROUNDS"))
-  }
+  bcrypt: {
+    salt_rounds: Number(getEnvVariable("SALT_ROUNDS")),
+  },
+  url: {
+    email_verification: getEnvVariable("APP_URL"),
+  },
 } as const; // this as const make this object only readonly
