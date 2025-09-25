@@ -19,6 +19,7 @@ import { generateTemporaryToken } from "../utils/token";
 import { Prisma } from "@prisma/client";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
+// logging done
 const registerUser = asyncHandler(async (req, res) => {
   const { email, password, username, fullName } = req.body;
 
@@ -29,6 +30,14 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   if (existedUser) {
+    logger.warn(
+      "Duplicate registration attempt with existed email or username",
+      {
+        email,
+        username,
+        ip: req.ip,
+      }
+    );
     throw new ApiError(400, "User with this email or username already exists");
   }
 
@@ -60,6 +69,13 @@ const registerUser = asyncHandler(async (req, res) => {
     ),
   });
 
+  logger.info("User registered successfully", {
+    id: newUser.id,
+    email: newUser.email,
+    username: newUser.username,
+    ip: req.ip,
+  });
+
   return sendApiResponse(
     res,
     201,
@@ -67,7 +83,7 @@ const registerUser = asyncHandler(async (req, res) => {
   );
 });
 
-// some problem
+// logging done
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -77,11 +93,30 @@ const loginUser = asyncHandler(async (req, res) => {
     },
   });
 
-  if (!user || !(await verifyHash(password, user.password))) {
+  if (!user) {
+    logger.warn("Login failed because of invalid email", { email, ip: req.ip });
     throw new ApiError(401, "Invalid email or password"); // 🔹 401 Unauthorized
   }
 
+  if (!user.password) {
+    logger.warn(
+      "Login attempted by Google account and does not have password",
+      { email, ip: req.ip }
+    );
+    throw new ApiError(
+      400,
+      "This account is registered with Google. Please log in using Google."
+    );
+  }
+
+  const isPasswordValid = await verifyHash(password, user.password);
+  if (!isPasswordValid) {
+    logger.warn("Login failed: incorrect password", { email, ip: req.ip });
+    throw new ApiError(401, "Invalid email or password");
+  }
+
   if (!user.isEmailVerified) {
+    logger.warn("Login attempt with unverified email", { email, ip: req.ip });
     throw new ApiError(403, "Email not verified, first verify your email");
   }
   // 403 Forbidden
@@ -101,12 +136,19 @@ const loginUser = asyncHandler(async (req, res) => {
       maxAge: ms(config.auth.refreshTokenExpiry),
     });
 
+  logger.info("User logged in successfully", {
+    id: user.id,
+    email,
+    ip: req.ip,
+  });
+
   return sendApiResponse(res, 200, "User Logged In successfully", {
     accessToken,
     refreshToken,
   });
 });
 
+// logging done
 const logoutUser = asyncHandler(async (req, res) => {
   const userId = req.userId;
 
@@ -119,17 +161,27 @@ const logoutUser = asyncHandler(async (req, res) => {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
         // P2025 = Record not found
+        logger.warn("Logout failed: user not found", { userId, ip: req.ip });
         throw new ApiError(404, "User not found");
       }
     }
 
-    logger.error("Unexpected DB error during logout", { error });
+    logger.error("Unexpected DB error during logout", {
+      userId,
+      ip: req.ip,
+      error:
+        error instanceof Error
+          ? { message: error.message, stack: error.stack }
+          : error,
+    });
     throw new ApiError(500, "Internal server error");
   }
 
   res
     .clearCookie("accessToken", cookieOptions)
     .clearCookie("refreshToken", cookieOptions);
+
+  logger.info("User logged out successfully", { userId, ip: req.ip });
 
   return sendApiResponse(res, 200, "User logged out successfully");
 });
@@ -425,6 +477,13 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
+  if (!user.password) {
+    throw new ApiError(
+      400,
+      "This account was created with Google login. You cannot change password here."
+    );
+  }
+
   const isPasswordValid = await verifyHash(oldPassword, user.password);
 
   if (!isPasswordValid) {
@@ -446,6 +505,35 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   return sendApiResponse(res, 200, "Password updated successfully");
 });
 
+const setPassword = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const { newPassword } = req.body;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  if (!user.googleId || user.password) {
+    throw new ApiError(403, "Not allowed to set password");
+  }
+
+  const hashedPassword = await createHash(newPassword);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      password: hashedPassword,
+      refreshToken: null,
+    },
+  });
+
+  return sendApiResponse(res, 200, "Password set successfully");
+});
+
 export {
   registerUser,
   loginUser,
@@ -457,6 +545,7 @@ export {
   forgetPasswordRequest,
   resetForgetPassword,
   changeCurrentPassword,
+  setPassword,
 };
 
 /*
