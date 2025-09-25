@@ -7,10 +7,14 @@
         "strict": true,
         "esModuleInterop": true, // makes import and export workable properly
         "forceConsistentCasingInFileNames": true, // When enabled, TypeScript will check your imports and file names and throw an error if the case does not match exactly.
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "typeRoots": [
+            "./node_modules/@types",
+            "./types"
+        ]
     },
     "include": [
-        "src/**/*"
+        "src/**/*", "types"
     ],
     "exclude": [
         "node_modules"

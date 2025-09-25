@@ -20,7 +20,7 @@ import { Prisma } from "@prisma/client";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { email, password, username } = req.body;
+  const { email, password, username, fullName } = req.body;
 
   const existedUser = await prisma.user.findFirst({
     where: {
@@ -40,15 +40,11 @@ const registerUser = asyncHandler(async (req, res) => {
     data: {
       email,
       username,
+      fullName,
       password: hashedPassword,
       isEmailVerified: false,
       emailVerificationToken: hashedToken,
       emailVerificationExpiry: tokenExpiry,
-    },
-    select: {
-      id: true,
-      email: true,
-      username: true,
     },
   });
 
@@ -59,7 +55,7 @@ const registerUser = asyncHandler(async (req, res) => {
     email: newUser.email,
     subject: "Please verify your email",
     mailgenContent: emailVerificationMailgenContent(
-      newUser.username,
+      newUser.fullName,
       verificationLink
     ),
   });
@@ -67,11 +63,11 @@ const registerUser = asyncHandler(async (req, res) => {
   return sendApiResponse(
     res,
     201,
-    "User registered successfully and verification email has been sent on your email",
-    newUser
+    "User registered successfully and verification email has been sent on your email"
   );
 });
 
+// some problem
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -95,15 +91,6 @@ const loginUser = asyncHandler(async (req, res) => {
     user.id
   );
 
-  const responseData = {
-    id: user.id,
-    email: user.email,
-    username: user.username,
-    role: user.role,
-    accessToken,
-    refreshToken,
-  };
-
   res
     .cookie("accessToken", accessToken, {
       ...cookieOptions,
@@ -114,7 +101,10 @@ const loginUser = asyncHandler(async (req, res) => {
       maxAge: ms(config.auth.refreshTokenExpiry),
     });
 
-  return sendApiResponse(res, 200, "User Logged In successfully", responseData);
+  return sendApiResponse(res, 200, "User Logged In successfully", {
+    accessToken,
+    refreshToken,
+  });
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -156,6 +146,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
       username: true,
       email: true,
       role: true,
+      fullName: true,
     },
   });
 
@@ -191,6 +182,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
       id: true,
       email: true,
       username: true,
+      fullName: true,
     },
   });
 
@@ -213,6 +205,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
     id: user.id,
     email: user.email,
     username: user.username,
+    fullName: user.fullName,
     isEmailVerified: true,
   };
 
@@ -255,7 +248,7 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
     email: user.email,
     subject: "Please verify your email",
     mailgenContent: emailVerificationMailgenContent(
-      user.username,
+      user.fullName,
       verificationLink
     ),
   });
@@ -359,7 +352,7 @@ const forgetPasswordRequest = asyncHandler(async (req, res) => {
     email,
     subject: "Password reset request",
     mailgenContent: forgetPasswordMailgenContent(
-      user.username,
+      user.fullName,
       `${config.url.forget_password}/${unHashedToken}`
     ),
   });
@@ -452,7 +445,6 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
   return sendApiResponse(res, 200, "Password updated successfully");
 });
-
 
 export {
   registerUser,
