@@ -56,5 +56,6 @@ export const config = {
   },
   url: {
     email_verification: getEnvVariable("APP_URL"),
+    forget_password: getEnvVariable("FORGOT_PASSWORD_REDIRECT_URL"),
   },
 } as const; // this as const make this object only readonly

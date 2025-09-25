@@ -16,11 +16,15 @@ model User {
   id                      String    @id @default(ulid())
   username                String    @unique
   email                   String    @unique
+  fullName                String
   password                String
   refreshToken            String?
   isEmailVerified         Boolean   @default(false)
   emailVerificationToken  String?
   emailVerificationExpiry DateTime?
+  forgotPasswordToken     String?
+  forgotPasswordExpiry    DateTime?
+  googleId                String?
   role                    Role      @default(USER)
   incomes                 Income[]
   expenses                Expense[]
