@@ -186,6 +186,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   return sendApiResponse(res, 200, "User logged out successfully");
 });
 
+// logging done
 const getCurrentUser = asyncHandler(async (req, res) => {
   const userId = req.userId;
 
@@ -203,18 +204,28 @@ const getCurrentUser = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
+    logger.warn("Tried to fetch current user, but user not exist", {
+      userId,
+      ip: req.ip,
+    });
     throw new ApiError(404, "User not found");
   }
+
+  logger.info("Fetched current user data successfully", { userId, ip: req.ip });
 
   return sendApiResponse(res, 200, "User data fetched successfully", user);
 });
 
 const regex = /^[a-f0-9]{64}$/i;
 
+// logging done
 const verifyEmail = asyncHandler(async (req, res) => {
   const verificationToken = req.params.verificationToken?.trim();
 
   if (!verificationToken || !regex.test(verificationToken)) {
+    logger.warn("Email verification attempt with invalid token", {
+      ip: req.ip,
+    });
     throw new ApiError(400, "Email verification token is missing or invalid");
   }
 
@@ -239,6 +250,10 @@ const verifyEmail = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
+    logger.warn("Email verification failed: token invalid or expired", {
+      ip: req.ip,
+      hashedToken,
+    });
     throw new ApiError(400, "Token is invalid or expired");
   }
 
@@ -253,6 +268,12 @@ const verifyEmail = asyncHandler(async (req, res) => {
     },
   });
 
+  logger.info("Email verification done", {
+    userId: user.id,
+    email: user.email,
+    ip: req.ip,
+  });
+
   const responseData = {
     id: user.id,
     email: user.email,
@@ -264,6 +285,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
   return sendApiResponse(res, 200, "Email is verified", responseData);
 });
 
+// logging done
 const resendEmailVerification = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
@@ -274,6 +296,14 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
   });
 
   if (!user || user.isEmailVerified) {
+    logger.warn(
+      "Resend email verification failed: user not found or already verified",
+      {
+        email,
+        isEmailVerified: user?.isEmailVerified,
+        ip: req.ip,
+      }
+    );
     return sendApiResponse(
       res,
       200,
@@ -305,6 +335,12 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
     ),
   });
 
+  logger.info("Verification email resent successfully", {
+    userId: user.id,
+    email: user.email,
+    ip: req.ip,
+  });
+
   return sendApiResponse(res, 200, "Mail has been sent to your email id");
 });
 
@@ -312,6 +348,7 @@ interface RefreshTokenPayload extends JwtPayload {
   id: string;
 }
 
+// logging done
 const renewAccessToken = asyncHandler(async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith("Bearer ")
@@ -321,6 +358,7 @@ const renewAccessToken = asyncHandler(async (req, res) => {
   const userToken = req.cookies.refreshToken || token;
 
   if (!userToken) {
+    logger.warn("Refresh token not present", { ip: req.ip });
     throw new ApiError(401, "Unauthorized access");
   }
 
@@ -331,6 +369,9 @@ const renewAccessToken = asyncHandler(async (req, res) => {
     ) as RefreshTokenPayload;
 
     if (!decoded.id) {
+      logger.warn("Refresh token decoded but payload invalid", {
+        ip: req.ip,
+      });
       throw new ApiError(401, "Invalid token payload");
     }
 
@@ -348,16 +389,28 @@ const renewAccessToken = asyncHandler(async (req, res) => {
         maxAge: ms(config.auth.refreshTokenExpiry),
       });
 
+    logger.info("Access Token renewed successfully", {
+      userId: decoded.id,
+      ip: req.ip,
+    });
+
     return sendApiResponse(res, 200, "Token renewed successfully", {
       accessToken,
       refreshToken,
     });
   } catch (error) {
-    logger.error("Token renewal failed", { error: error, ip: req.ip });
+    logger.error("Token renewal failed", {
+      ip: req.ip,
+      error:
+        error instanceof Error
+          ? { message: error.message, stack: error.stack }
+          : error,
+    });
     throw new ApiError(401, "Invalid or expired token");
   }
 });
 
+// logging done
 const forgetPasswordRequest = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
@@ -375,9 +428,8 @@ const forgetPasswordRequest = asyncHandler(async (req, res) => {
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025"
+      error.code === "P2025" // User not found
     ) {
-      // User not found
       logger.warn("Password reset requested for non-existing email", {
         email,
         ip: req.ip,
@@ -409,6 +461,11 @@ const forgetPasswordRequest = asyncHandler(async (req, res) => {
     ),
   });
 
+  logger.info("Email is send for forget password request", {
+    userId: user.id,
+    ip: req.ip,
+  });
+
   return sendApiResponse(
     res,
     200,
@@ -416,10 +473,14 @@ const forgetPasswordRequest = asyncHandler(async (req, res) => {
   );
 });
 
+// logging done
 const resetForgetPassword = asyncHandler(async (req, res) => {
   const { resetToken } = req.params;
 
   if (!regex.test(resetToken)) {
+    logger.warn("Token send for reset forget password is invalid", {
+      ip: req.ip,
+    });
     throw new ApiError(400, "Invalid reset token format");
   }
 
@@ -452,15 +513,24 @@ const resetForgetPassword = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid or expired password reset link");
   }
 
+  logger.info("Password reset successful", {
+    ip: req.ip,
+  });
+
   return sendApiResponse(res, 200, "Password reset successfully");
 });
 
+// logging done
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const userId = req.userId;
 
   const { oldPassword, newPassword } = req.body;
 
   if (oldPassword === newPassword) {
+    logger.warn(
+      "Old password is equal to new password, changing current password",
+      { userId, ip: req.ip }
+    );
     throw new ApiError(
       400,
       "New password must not be the same as the old password"
@@ -474,10 +544,18 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
+    logger.warn("User not found, trying to change current password", {
+      userId,
+      ip: req.ip,
+    });
     throw new ApiError(404, "User not found");
   }
 
   if (!user.password) {
+    logger.warn(
+      "Trying to change google logged in account and password is not set",
+      { userId, ip: req.ip }
+    );
     throw new ApiError(
       400,
       "This account was created with Google login. You cannot change password here."
@@ -487,6 +565,10 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   const isPasswordValid = await verifyHash(oldPassword, user.password);
 
   if (!isPasswordValid) {
+    logger.warn("Old password is invalid, changing current user password", {
+      userId,
+      ip: req.ip,
+    });
     throw new ApiError(401, "Invalid old password");
   }
 
@@ -502,9 +584,12 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     },
   });
 
+  logger.info("User password updated successfully", { userId, ip: req.ip });
+
   return sendApiResponse(res, 200, "Password updated successfully");
 });
 
+// logging done
 const setPassword = asyncHandler(async (req, res) => {
   const userId = req.userId;
   const { newPassword } = req.body;
@@ -514,10 +599,12 @@ const setPassword = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
+    logger.warn("Password set failed - user not found", { userId, ip: req.ip });
     throw new ApiError(404, "User not found");
   }
 
   if (!user.googleId || user.password) {
+    logger.warn("Password set not allowed", { userId, ip: req.ip });
     throw new ApiError(403, "Not allowed to set password");
   }
 
@@ -530,6 +617,8 @@ const setPassword = asyncHandler(async (req, res) => {
       refreshToken: null,
     },
   });
+
+  logger.info("Password set successfully", { userId, ip: req.ip });
 
   return sendApiResponse(res, 200, "Password set successfully");
 });
