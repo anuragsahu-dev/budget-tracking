@@ -11,9 +11,9 @@ process.on("uncaughtException", (err: Error) => {
   process.exit(1);
 });
 
-
 // Start the server
 const server = app.listen(PORT, () => {
+  console.log(`Server running on PORT: ${PORT} [${config.server.nodeEnv}]`);
   logger.info(`Server running on PORT: ${PORT} [${config.server.nodeEnv}]`);
 });
 
@@ -36,7 +36,6 @@ const gracefulShutdown = (signal: string) => {
   logger.info(`${signal} received. Shutting down gracefully...`);
   server.close(() => logger.info("Server terminated."));
 };
-
 
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));

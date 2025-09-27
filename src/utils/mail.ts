@@ -44,7 +44,13 @@ const sendEmail = async (options: Options) => {
   try {
     await transporter.sendMail(mail);
   } catch (error) {
-    logger.error("Failed to send email", { mailTo: mail.to, error });
+    logger.error("Failed to send email", {
+      mailTo: mail.to,
+      error:
+        error instanceof Error
+          ? { message: error.message, stack: error.stack }
+          : error,
+    });
     throw new ApiError(
       500,
       "Email sending service fail. Please use 'resend' option."

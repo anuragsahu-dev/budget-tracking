@@ -18,10 +18,19 @@ import { createHash, verifyHash } from "../utils/password";
 import { generateTemporaryToken } from "../utils/token";
 import { Prisma } from "@prisma/client";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import {
+  changeCurrentPasswordInput,
+  emailInput,
+  loginUserInput,
+  registerUserInpurt,
+  resetForgetPasswordInput,
+  setPasswordInput,
+  updateUsernameInput,
+} from "../validators/userValidation";
 
-// logging done
+// done
 const registerUser = asyncHandler(async (req, res) => {
-  const { email, password, username, fullName } = req.body;
+  const { email, password, username, fullName }: registerUserInpurt = req.body;
 
   const existedUser = await prisma.user.findFirst({
     where: {
@@ -83,9 +92,9 @@ const registerUser = asyncHandler(async (req, res) => {
   );
 });
 
-// logging done
+// done
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password }: loginUserInput = req.body;
 
   const user = await prisma.user.findUnique({
     where: {
@@ -94,13 +103,16 @@ const loginUser = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
-    logger.warn("Login failed because of invalid email", { email, ip: req.ip });
+    logger.warn("Login failed because of invalid email, user not found", {
+      email,
+      ip: req.ip,
+    });
     throw new ApiError(401, "Invalid email or password"); // 🔹 401 Unauthorized
   }
 
   if (!user.password) {
     logger.warn(
-      "Login attempted by Google account and does not have password",
+      "User login is attempted by google account, but password is not present in the database",
       { email, ip: req.ip }
     );
     throw new ApiError(
@@ -148,7 +160,7 @@ const loginUser = asyncHandler(async (req, res) => {
   });
 });
 
-// logging done
+// done
 const logoutUser = asyncHandler(async (req, res) => {
   const userId = req.userId;
 
@@ -186,7 +198,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   return sendApiResponse(res, 200, "User logged out successfully");
 });
 
-// logging done
+// done
 const getCurrentUser = asyncHandler(async (req, res) => {
   const userId = req.userId;
 
@@ -204,10 +216,13 @@ const getCurrentUser = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
-    logger.warn("Tried to fetch current user, but user not exist", {
-      userId,
-      ip: req.ip,
-    });
+    logger.warn(
+      "Tried to fetch current user, but user not exist, verify jwt is also happen",
+      {
+        userId,
+        ip: req.ip,
+      }
+    );
     throw new ApiError(404, "User not found");
   }
 
@@ -218,7 +233,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const regex = /^[a-f0-9]{64}$/i;
 
-// logging done
+//  done
 const verifyEmail = asyncHandler(async (req, res) => {
   const verificationToken = req.params.verificationToken?.trim();
 
@@ -285,9 +300,9 @@ const verifyEmail = asyncHandler(async (req, res) => {
   return sendApiResponse(res, 200, "Email is verified", responseData);
 });
 
-// logging done
+// done
 const resendEmailVerification = asyncHandler(async (req, res) => {
-  const { email } = req.body;
+  const { email }: emailInput = req.body;
 
   const user = await prisma.user.findUnique({
     where: {
@@ -348,7 +363,7 @@ interface RefreshTokenPayload extends JwtPayload {
   id: string;
 }
 
-// logging done
+// done
 const renewAccessToken = asyncHandler(async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith("Bearer ")
@@ -358,7 +373,6 @@ const renewAccessToken = asyncHandler(async (req, res) => {
   const userToken = req.cookies.refreshToken || token;
 
   if (!userToken) {
-    logger.warn("Refresh token not present", { ip: req.ip });
     throw new ApiError(401, "Unauthorized access");
   }
 
@@ -389,11 +403,6 @@ const renewAccessToken = asyncHandler(async (req, res) => {
         maxAge: ms(config.auth.refreshTokenExpiry),
       });
 
-    logger.info("Access Token renewed successfully", {
-      userId: decoded.id,
-      ip: req.ip,
-    });
-
     return sendApiResponse(res, 200, "Token renewed successfully", {
       accessToken,
       refreshToken,
@@ -410,11 +419,32 @@ const renewAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-// logging done
+// done
 const forgetPasswordRequest = asyncHandler(async (req, res) => {
-  const { email } = req.body;
+  const { email }: emailInput = req.body;
 
   const { unHashedToken, hashedToken, tokenExpiry } = generateTemporaryToken();
+
+  const existedUser = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+  if (!existedUser || !existedUser.password) {
+    logger.warn(
+      "Password reset requested for non-password account or non-existing email",
+      {
+        email,
+        ip: req.ip,
+      }
+    );
+
+    return sendApiResponse(
+      res,
+      200,
+      "If this email exists in our system, a reset link has been sent."
+    );
+  }
 
   let user;
   try {
@@ -426,21 +456,6 @@ const forgetPasswordRequest = asyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025" // User not found
-    ) {
-      logger.warn("Password reset requested for non-existing email", {
-        email,
-        ip: req.ip,
-      });
-      return sendApiResponse(
-        res,
-        200,
-        "If this email exists in our system, a reset link has been sent."
-      );
-    }
-
     logger.error("Database error while handling password reset request", {
       email,
       ip: req.ip,
@@ -473,7 +488,7 @@ const forgetPasswordRequest = asyncHandler(async (req, res) => {
   );
 });
 
-// logging done
+// done
 const resetForgetPassword = asyncHandler(async (req, res) => {
   const { resetToken } = req.params;
 
@@ -484,7 +499,7 @@ const resetForgetPassword = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid reset token format");
   }
 
-  const { newPassword } = req.body;
+  const { newPassword }: resetForgetPasswordInput = req.body;
 
   const hashedToken = crypto
     .createHash("sha256")
@@ -520,11 +535,11 @@ const resetForgetPassword = asyncHandler(async (req, res) => {
   return sendApiResponse(res, 200, "Password reset successfully");
 });
 
-// logging done
+// done
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const userId = req.userId;
 
-  const { oldPassword, newPassword } = req.body;
+  const { oldPassword, newPassword }: changeCurrentPasswordInput = req.body;
 
   if (oldPassword === newPassword) {
     logger.warn(
@@ -544,16 +559,19 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
-    logger.warn("User not found, trying to change current password", {
-      userId,
-      ip: req.ip,
-    });
+    logger.warn(
+      "User not found, trying to change current password, verify jwt is also doned",
+      {
+        userId,
+        ip: req.ip,
+      }
+    );
     throw new ApiError(404, "User not found");
   }
 
   if (!user.password) {
     logger.warn(
-      "Trying to change google logged in account and password is not set",
+      "Trying to change google logged in account password and  password is not set",
       { userId, ip: req.ip }
     );
     throw new ApiError(
@@ -589,17 +607,20 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   return sendApiResponse(res, 200, "Password updated successfully");
 });
 
-// logging done
+// done
 const setPassword = asyncHandler(async (req, res) => {
   const userId = req.userId;
-  const { newPassword } = req.body;
+  const { newPassword }: setPasswordInput = req.body;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
   });
 
   if (!user) {
-    logger.warn("Password set failed - user not found", { userId, ip: req.ip });
+    logger.warn("Password set failed - user not found, verify jwt also done", {
+      userId,
+      ip: req.ip,
+    });
     throw new ApiError(404, "User not found");
   }
 
@@ -623,6 +644,45 @@ const setPassword = asyncHandler(async (req, res) => {
   return sendApiResponse(res, 200, "Password set successfully");
 });
 
+// done
+const updateUsername = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const { username }: updateUsernameInput = req.body;
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        username,
+      },
+    });
+
+    logger.info("Username updated successfully", { userId, ip: req.ip });
+
+    return sendApiResponse(res, 200, "Username updated successfully", {
+      username: updatedUser.username,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new ApiError(409, "Username is already taken");
+    }
+    logger.error("Failed to update username", {
+      userId,
+      ip: req.ip,
+      error:
+        error instanceof Error
+          ? { message: error.message, stack: error.stack }
+          : error,
+    });
+    throw new ApiError(500, "Something went wrong");
+  }
+});
+
 export {
   registerUser,
   loginUser,
@@ -635,6 +695,7 @@ export {
   resetForgetPassword,
   changeCurrentPassword,
   setPassword,
+  updateUsername,
 };
 
 /*

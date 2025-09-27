@@ -53,7 +53,11 @@ const generateAccessRefreshToken = async (
     return { refreshToken, accessToken };
   } catch (error) {
     logger.error("Error occured while generating access and refresh token", {
-      error,
+      userId: id,
+      error:
+        error instanceof Error
+          ? { mesage: error.message, stack: error.stack }
+          : error,
     });
     throw new ApiError(
       500,

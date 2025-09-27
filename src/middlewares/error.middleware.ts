@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction, RequestHandler } from "express";
 import { config } from "../config/config";
+import logger from "../config/logger";
 
 type Errors = string | object | (string | object)[];
 
@@ -46,6 +47,15 @@ export const asyncHandler = (
     try {
       await fn(req, res, next);
     } catch (error) {
+      logger.error("Unhandled error in asyncHandler", {
+        method: req.method,
+        url: req.originalUrl,
+        ip: req.ip,
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : error,
+      });
       next(error);
     }
   };
@@ -65,7 +75,6 @@ export const globalErrorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-
   let error: ApiError;
 
   if (err instanceof ApiError) {

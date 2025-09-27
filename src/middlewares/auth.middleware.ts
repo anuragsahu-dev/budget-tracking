@@ -20,6 +20,7 @@ interface AccessTokenPayload extends JwtPayload {
   role: Role;
 }
 
+// logging done
 export const verifyJWT = (req: Request, _res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
@@ -39,6 +40,9 @@ export const verifyJWT = (req: Request, _res: Response, next: NextFunction) => {
     ) as AccessTokenPayload;
 
     if (!decoded?.id) {
+      logger.warn("Access token decoded, but have invalid payload", {
+        ip: req.ip,
+      });
       return next(new ApiError(401, "Authentication failed. Please log in."));
     }
 
@@ -46,7 +50,10 @@ export const verifyJWT = (req: Request, _res: Response, next: NextFunction) => {
     req.userRole = decoded.role;
     next();
   } catch (error) {
-    logger.error("Access Token Verification failed", { error: error, ip: req.ip });
+    logger.error("Access Token Verification failed", {
+      error: error,
+      ip: req.ip,
+    });
     return next(new ApiError(401, "Authentication failed. Please log in."));
   }
 };

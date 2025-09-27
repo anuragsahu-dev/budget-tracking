@@ -48,11 +48,7 @@ const errorFileRotate = new DailyRotateFile({
 const logger = createLogger({
   level: logLevel,
   format: fileFormat,
-  transports: [
-    new transports.Console({ format: consoleFormat }),
-    infoFileRotate,
-    errorFileRotate,
-  ],
+  transports: [infoFileRotate, errorFileRotate],
   exceptionHandlers: [errorFileRotate],
   rejectionHandlers: [errorFileRotate],
   exitOnError: false,
