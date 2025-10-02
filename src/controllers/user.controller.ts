@@ -73,7 +73,7 @@ const registerUser = asyncHandler(async (req, res) => {
     email: newUser.email,
     subject: "Please verify your email",
     mailgenContent: emailVerificationMailgenContent(
-      newUser.fullName,
+      newUser.fullName || newUser.username,
       verificationLink
     ),
   });
@@ -345,7 +345,7 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
     email: user.email,
     subject: "Please verify your email",
     mailgenContent: emailVerificationMailgenContent(
-      user.fullName,
+      user.fullName || user.username,
       verificationLink
     ),
   });
@@ -471,7 +471,7 @@ const forgetPasswordRequest = asyncHandler(async (req, res) => {
     email,
     subject: "Password reset request",
     mailgenContent: forgetPasswordMailgenContent(
-      user.fullName,
+      user.fullName || user.username,
       `${config.url.forget_password}/${unHashedToken}`
     ),
   });

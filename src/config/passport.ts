@@ -4,7 +4,7 @@ import prisma from "../database/prisma";
 import { config } from "./config";
 import { nanoid } from "nanoid";
 import logger from "./logger";
-
+   
 passport.use(
   new GoogleStrategy(
     {
@@ -13,6 +13,7 @@ passport.use(
       callbackURL: config.google.callbackUrl,
     },
     async (_accessToken, _refreshToken, profile, cb) => {
+      console.log("Hello 232")
       try {
         const email = profile.emails?.[0]?.value;
         if (!email) {
@@ -22,7 +23,7 @@ passport.use(
         const normalizedEmail = email.toLowerCase();
         const username = `${profile.displayName.replace(/\s+/g, "_")}_${nanoid(
           8
-        )}`;
+        )}`;  
 
         let user = await prisma.user.findUnique({
           where: { email: normalizedEmail },

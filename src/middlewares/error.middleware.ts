@@ -47,15 +47,6 @@ export const asyncHandler = (
     try {
       await fn(req, res, next);
     } catch (error) {
-      logger.error("Unhandled error in asyncHandler", {
-        method: req.method,
-        url: req.originalUrl,
-        ip: req.ip,
-        error:
-          error instanceof Error
-            ? { message: error.message, stack: error.stack }
-            : error,
-      });
       next(error);
     }
   };
@@ -71,7 +62,7 @@ interface ErrorResponse {
 
 export const globalErrorHandler = (
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): void => {
@@ -114,7 +105,15 @@ export const globalErrorHandler = (
       res.status(statusCode).json(response);
     } else {
       // Programming or other unknown error: don't leak error details
-      console.error("💥 Unexpected Error:", error);
+      logger.error("Unhandled error in asyncHandler", {
+        method: req.method,
+        url: req.originalUrl,
+        ip: req.ip,
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : error,
+      });
       const response: ErrorResponse = {
         status: "error",
         message: "Something went wrong!",

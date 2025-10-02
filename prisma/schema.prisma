@@ -16,7 +16,7 @@ model User {
   id                      String    @id @default(ulid())
   username                String    @unique
   email                   String    @unique
-  fullName                String
+  fullName                String?
   password                String?
   refreshToken            String?
   isEmailVerified         Boolean   @default(false)

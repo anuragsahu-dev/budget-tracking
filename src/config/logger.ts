@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { createLogger, format, transports } from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 import { config } from "./config";
+import type TransportStream from "winston-transport";
 
 const logDir = path.join(process.cwd(), "logs");
 if (!fs.existsSync(logDir)) {
@@ -45,10 +46,24 @@ const errorFileRotate = new DailyRotateFile({
   format: fileFormat,
 });
 
+const transportsList: TransportStream[] = [infoFileRotate, errorFileRotate];
+
+// adding the console only in development
+if (config.server.nodeEnv !== "production") {
+  transportsList.push(
+    new transports.Console({
+      level: "debug",
+      format: consoleFormat,
+      handleExceptions: true,
+    })
+  );
+}
+
+
 const logger = createLogger({
   level: logLevel,
   format: fileFormat,
-  transports: [infoFileRotate, errorFileRotate],
+  transports: transportsList,
   exceptionHandlers: [errorFileRotate],
   rejectionHandlers: [errorFileRotate],
   exitOnError: false,

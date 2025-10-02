@@ -97,7 +97,7 @@ router.post("/renew-access-token", refreshTokenLimiter, renewAccessToken);
 router.post(
   "/forget-password",
   forgotPasswordLimiter,
-  validateData(emailSchema),
+  validateData(emailSchema), 
   forgetPasswordRequest
 );
 router.post(

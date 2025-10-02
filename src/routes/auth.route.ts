@@ -9,7 +9,7 @@ import { config } from "../config/config";
 import ms from "ms";
 import { sendApiResponse } from "../utils/apiResponse";
 import { User } from "@prisma/client";
-
+    
 const router = Router();
 
 router.get(
@@ -47,6 +47,8 @@ router.get(
     });
   })
 );
+
+export default router;
 
 // when we have frontend then some configuration change but not everything
 // like res.redirect use and failure redirect use
