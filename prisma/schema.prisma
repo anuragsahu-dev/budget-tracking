@@ -7,14 +7,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
+// ======= ENUMS =======
+enum UserRole {
   USER
+  ADMIN
 }
 
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum SubscriptionPlan {
+  PRO_MONTHLY
+  PRO_YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  PENDING
+  CANCELLED
+}
+
+// ======= USER =======
 model User {
   id                      String    @id @default(ulid())
-  username                String    @unique
   email                   String    @unique
   fullName                String?
   password                String?
@@ -25,49 +43,113 @@ model User {
   forgotPasswordToken     String?
   forgotPasswordExpiry    DateTime?
   googleId                String?   @unique
-  role                    Role      @default(USER)
-  incomes                 Income[]
-  expenses                Expense[]
-  budgets                 Budget[]
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-}
+  role                    UserRole  @default(USER)
 
-model Income {
-  id          String   @id @default(ulid())
-  amount      Decimal  @db.Decimal(10, 2)
-  description String?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+  // relations
+  transactions Transaction[]
+  categories   Category[] // user-created categories
+  budgets      Budget[] 
 
-model Expense {
-  id          String   @id @default(ulid())
-  amount      Decimal  @db.Decimal(10, 2)
-  category    String
-  description String?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+  otps          OTP[]
+  sessions      Session[]
+  subscriptions Subscription[]
 
-model Budget {
-  id         String     @id @default(ulid())
-  userId     String
-  user       User       @relation(fields: [userId], references: [id])
-  categories Category[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Category {
-  id       String  @id @default(ulid())
-  name     String
-  amount   Decimal @db.Decimal(10, 2)
-  budgetId String
-  budget   Budget  @relation(fields: [budgetId], references: [id])
+  id        String   @id @default(ulid())
+  userId    String?
+  name      String
+  color     String?
+  createdAt DateTime @default(now())
+
+  user              User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  budgetAllocations BudgetAllocation[]
 }
+
+model Transaction {
+  id          String          @id @default(ulid())
+  userId      String
+  categoryId  String? 
+  amount      Decimal         @db.Decimal(12, 2)
+  type        TransactionType
+  description String?
+  date        DateTime        @default(now())
+  
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+// ======= BUDGET (monthly budget record) =======
+model Budget {
+  id         String   @id @default(ulid())
+  userId     String
+  month      Int // 1-12
+  year       Int
+  totalLimit Decimal? @db.Decimal(12, 2) // optional overall monthly limit
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  allocations BudgetAllocation[]
+}
+
+// ======= BUDGET ALLOCATION (per-category amounts within a Budget) =======
+model BudgetAllocation {
+  id         String  @id @default(ulid())
+  budgetId   String
+  categoryId String
+  amount     Decimal @db.Decimal(12, 2) // allocated amount for this category in that month
+
+  budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([budgetId, categoryId]) // one allocation per category per budget/month
+}
+
+// ======= OTP =======
+model OTP {
+  id        String   @id @default(ulid())
+  userId    String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id           String   @id @default(ulid())
+  userId       String
+  refreshToken String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// // ======= SUBSCRIPTION =======
+model Subscription {
+  id                String             @id @default(ulid())
+  userId            String
+  plan              SubscriptionPlan
+  status            SubscriptionStatus @default(PENDING)
+  startDate         DateTime
+  endDate           DateTime
+  providerPaymentId String? // Stripe/ Razorpay payment id
+  providerOrderId   String? // if provider returns order id
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 

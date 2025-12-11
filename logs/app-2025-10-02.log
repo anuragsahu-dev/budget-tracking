@@ -40,3 +40,6 @@
 {"level":"info","message":"Database connected","timestamp":"2025-10-02 20:05:17"}
 {"level":"info","message":"Server running on PORT: 3000 [production]","timestamp":"2025-10-02 20:05:17"}
 {"email":"anuragsahu.dev@gmail.com","googleId":"107272745054253607784","level":"info","message":"Google login successful","timestamp":"2025-10-02 20:29:21"}
+{"level":"info","message":"Database connected","timestamp":"2025-10-02 20:41:08"}
+{"level":"info","message":"Redis connected","timestamp":"2025-10-02 20:41:08"}
+{"level":"info","message":"Server running on PORT: 3000 [production]","timestamp":"2025-10-02 20:41:08"}
