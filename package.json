@@ -2,6 +2,7 @@
   "name": "02-budget-tracking",
   "version": "1.0.0",
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "dev": "nodemon --legacy-watch",
     "lint": "npx eslint ."
@@ -13,7 +14,8 @@
   "license": "ISC",
   "description": "This is budget tracking project.",
   "dependencies": {
-    "@prisma/client": "^6.16.2",
+    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/client": "7.1.0",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -54,8 +56,9 @@
     "@types/rate-limit-redis": "^1.7.4",
     "eslint": "^9.36.0",
     "nodemon": "^3.1.10",
-    "prisma": "^6.16.2",
+    "prisma": "7.1.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.44.0"
   }

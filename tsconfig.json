@@ -1,20 +1,22 @@
 {
     "compilerOptions": {
-        "target": "es2020",
-        "module": "commonjs",
+        "target": "ES2023",
+        "module": "esnext",
+        "moduleResolution": "node",
         "outDir": "dist",
         "removeComments": true,
         "strict": true,
-        "esModuleInterop": true, // makes import and export workable properly
-        "forceConsistentCasingInFileNames": true, // When enabled, TypeScript will check your imports and file names and throw an error if the case does not match exactly.
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,
         "typeRoots": [
             "./node_modules/@types",
-            "./types"
+            "src/types"
         ]
     },
     "include": [
-        "src/**/*", "types"
+        "src/**/*",
+        "src/types"
     ],
     "exclude": [
         "node_modules"

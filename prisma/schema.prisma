@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ======= ENUMS =======
@@ -151,5 +151,3 @@ model Subscription {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-
