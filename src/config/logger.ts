@@ -72,7 +72,7 @@ const logger = createLogger({
 export default logger;
 
 /*
-🔹 Why errors go to both app-YYYY-MM-DD.log and error-YYYY-MM-DD.log
+Why errors go to both app-YYYY-MM-DD.log and error-YYYY-MM-DD.log
 
 Single place for all logs (app.log)
 

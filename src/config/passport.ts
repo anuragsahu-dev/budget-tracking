@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import prisma from "../database/prisma";
+import prisma from "./prisma";
 import { config } from "./config";
 import { nanoid } from "nanoid";
 import logger from "./logger";

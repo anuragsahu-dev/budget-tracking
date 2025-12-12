@@ -14,7 +14,7 @@ import {
   verifyEmail,
 } from "../controllers/user.controller";
 import { verifyJWT } from "../middlewares/auth.middleware";
-import { redisRateLimiter } from "../database/redis";
+import { redisRateLimiter } from "../config/redis";
 import { validateData } from "../middlewares/validate.middleware";
 import {
   changeCurrentPasswordSchema,
@@ -97,7 +97,7 @@ router.post("/renew-access-token", refreshTokenLimiter, renewAccessToken);
 router.post(
   "/forget-password",
   forgotPasswordLimiter,
-  validateData(emailSchema), 
+  validateData(emailSchema),
   forgetPasswordRequest
 );
 router.post(

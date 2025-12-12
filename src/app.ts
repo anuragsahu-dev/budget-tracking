@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import passport from "passport";
 
-import { redisRateLimiter } from "./database/redis";
+// import { redisRateLimiter } from "./config/redis";
 import { globalErrorHandler, ApiError } from "./middlewares/error.middleware";
 
 import "./config/passport";
@@ -22,15 +22,10 @@ app.use(hpp());
 
 // --- Rate Limiter ---
 // Global limiter for all /api routes
-app.use(
-  "/api",
-  redisRateLimiter({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    keyPrefix: "global:",
-    message: "Too many requests, please try again later.",
-  })
-);
+// app.use(
+//   "/api",
+
+// );
 
 // body parser
 app.use(express.json({ limit: "16kb" }));

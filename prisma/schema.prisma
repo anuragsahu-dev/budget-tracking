@@ -50,7 +50,7 @@ model User {
   categories   Category[] // user-created categories
   budgets      Budget[] 
 
-  otps          OTP[]
+  otps          Otp[]
   sessions      Session[]
   subscriptions Subscription[]
 
@@ -116,11 +116,13 @@ model BudgetAllocation {
 }
 
 // ======= OTP =======
-model OTP {
-  id        String   @id @default(ulid())
+model Otp {
+  id        String   @id @default(uuid())
   userId    String
-  otp       String
+  email     String?  @db.VarChar(320)
+  otpHash   String   @db.VarChar(255)
   expiresAt DateTime
+  verified  Boolean  @default(false)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

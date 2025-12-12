@@ -1,22 +1,17 @@
-import Redis from "ioredis";
 import { rateLimit } from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
+import redis from "../config/redis";
 
 import type { RedisReply } from "rate-limit-redis";
 
-import { config } from "../config/config";
-
-const redis = new Redis({
-  port: config.redis.port,
-  host: config.redis.host,
-});
-
-export function redisRateLimiter(options: {
+interface RateLimitOptions {
   windowMs: number;
   max: number;
+  keyPrefix: string;
   message?: string;
-  keyPrefix: string; // signup:, login:, global:
-}) {
+}
+
+function redisRateLimiter(options: RateLimitOptions) {
   return rateLimit({
     windowMs: options.windowMs,
     max: options.max,
@@ -38,4 +33,16 @@ export function redisRateLimiter(options: {
   });
 }
 
-export default redis;
+export const globalLimiter = redisRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests, please try again later.",
+  keyPrefix: "global:",
+});
+
+export const startLimiter = redisRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 6,
+  message: "Too many attempts. Please slow down.",
+  keyPrefix: "start:",
+});

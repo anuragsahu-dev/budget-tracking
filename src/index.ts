@@ -2,7 +2,7 @@ import app from "./app";
 import { config } from "./config/config";
 import logger from "./config/logger";
 import prisma from "./database/prisma";
-import redis from "./database/redis";
+import redis from "./config/redis";
 
 const PORT = config.server.port;
 
