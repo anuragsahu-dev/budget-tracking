@@ -38,10 +38,7 @@ model User {
   password                String?
   refreshToken            String?
   isEmailVerified         Boolean   @default(false)
-  emailVerificationToken  String?
-  emailVerificationExpiry DateTime?
-  forgotPasswordToken     String?
-  forgotPasswordExpiry    DateTime?
+
   googleId                String?   @unique
   role                    UserRole  @default(USER)
 
@@ -132,7 +129,6 @@ model Session {
   id           String   @id @default(ulid())
   userId       String
   refreshToken String
-  expiresAt    DateTime
   createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

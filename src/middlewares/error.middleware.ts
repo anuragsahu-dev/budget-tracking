@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction, RequestHandler } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { config } from "../config/config";
 import logger from "../config/logger";
 
@@ -39,18 +39,6 @@ export class ApiError extends Error {
     }
   }
 }
-
-export const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
-): RequestHandler => {
-  return async (req, res, next) => {
-    try {
-      await fn(req, res, next);
-    } catch (error) {
-      next(error);
-    }
-  };
-};
 
 // sending consistent response
 interface ErrorResponse {

@@ -3,16 +3,13 @@ import cors from "cors";
 import hpp from "hpp";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
-import passport from "passport";
+// import passport from "passport";
 
-// import { redisRateLimiter } from "./config/redis";
 import { globalErrorHandler, ApiError } from "./middlewares/error.middleware";
+import authRouter from "./modules/auth/auth.route";
 
 import "./config/passport";
-
-import healthRouter from "./routes/healthCheck.route";
-import userRouter from "./routes/user.route";
-import authRouter from "./routes/auth.route";
+import { globalLimiter } from "./middlewares/rateLimit.middleware";
 
 const app = express();
 
@@ -22,10 +19,7 @@ app.use(hpp());
 
 // --- Rate Limiter ---
 // Global limiter for all /api routes
-// app.use(
-//   "/api",
-
-// );
+app.use("/api", globalLimiter);
 
 // body parser
 app.use(express.json({ limit: "16kb" }));
@@ -50,11 +44,9 @@ app.use(
   })
 );
 
-app.use(passport.initialize());
+// app.use(passport.initialize());
 
 // api routes
-app.use("/healthCheck", healthRouter);
-app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
 
 // 404 handler

@@ -2,10 +2,12 @@
   "name": "02-budget-tracking",
   "version": "1.0.0",
   "main": "dist/index.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "nodemon --legacy-watch",
-    "lint": "npx eslint ."
+    "lint": "npx eslint .",
+    "build": "tsc",
+    "start": "node dist/index.js"
   },
   "keywords": [
     "budget"

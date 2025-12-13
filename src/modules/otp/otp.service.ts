@@ -60,11 +60,7 @@ export class OtpService {
     return this.createOtp(userId, email);
   }
 
-  async verifyOtp(
-    userId: string,
-    email: string,
-    otp: string
-  ): Promise<{ success: boolean; message: string }> {
+  async verifyOtp(userId: string, email: string, otp: string) {
     const { otpKey } = this.getRedisKeys(userId, email);
 
     // Try Redis first
@@ -113,7 +109,6 @@ export class OtpService {
     await this.clearRedisKeys(userId, email);
 
     logger.info(`OTP verified successfully for user ${userId}`);
-    return { success: true, message: "OTP verified successfully" };
   }
 
   private async clearRedisKeys(userId: string, email: string): Promise<void> {

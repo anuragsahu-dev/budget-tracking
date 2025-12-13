@@ -1,22 +1,29 @@
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
-import prisma from "../database/prisma";
+import prisma from "../config/prisma";
 import { config } from "../config/config";
 import { ApiError } from "../middlewares/error.middleware";
 import logger from "../config/logger";
+import type { CookieOptions } from "express";
+import { UserRole } from "../generated/prisma/client";
 
 interface GenerateToken {
   accessToken: string;
   refreshToken: string;
 }
 
-const cookieOptions = {
+const isProd = config.server.nodeEnv === "production";
+
+const cookieOptions: CookieOptions = {
   httpOnly: true,
-  secure: config.server.nodeEnv === "production",
-};
+  secure: isProd,
+  sameSite: isProd ? "none" : "lax",
+  path: "/",
+} as const;
 
 const generateAccessRefreshToken = async (
-  id: string
+  id: string,
+  role: UserRole
 ): Promise<GenerateToken> => {
   try {
     const refreshToken = jwt.sign(
@@ -32,19 +39,17 @@ const generateAccessRefreshToken = async (
       .update(refreshToken)
       .digest("hex");
 
-    const user = await prisma.user.update({
-      where: {
-        id,
-      },
+    await prisma.session.create({
       data: {
         refreshToken: hashedRefreshToken,
+        userId: id,
       },
     });
 
     const accessToken = jwt.sign(
       {
         id,
-        role: user.role,
+        role: role, // it's neccessary for RBAC
       },
       config.auth.accessTokenSecret,
       { expiresIn: config.auth.accessTokenExpiry }

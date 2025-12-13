@@ -59,7 +59,6 @@ if (config.server.nodeEnv !== "production") {
   );
 }
 
-
 const logger = createLogger({
   level: logLevel,
   format: fileFormat,
@@ -86,7 +85,7 @@ DB query took long (warn)
 
 Query failed (error)
 
-Without errors in app.log, you’d lose continuity.
+Without errors in app.log, you'd lose continuity.
 
 Dedicated file for errors (error.log)
 
