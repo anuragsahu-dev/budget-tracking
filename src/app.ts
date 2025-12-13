@@ -8,6 +8,9 @@ import passport from "passport";
 import { globalErrorHandler, ApiError } from "./middlewares/error.middleware";
 import authRouter from "./modules/auth/auth.route";
 import userRouter from "./modules/user/user.route";
+import categoryRouter from "./modules/category/category.route";
+
+import "./config/passport";
 
 import { globalLimiter } from "./middlewares/rateLimit.middleware";
 
@@ -49,6 +52,7 @@ app.use(passport.initialize());
 // api routes
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/categories", categoryRouter);
 
 // 404 handler
 app.use((_req, _res, next) => {

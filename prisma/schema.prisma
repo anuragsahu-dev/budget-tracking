@@ -7,7 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-// ======= ENUMS =======
 enum UserRole {
   USER
   ADMIN
@@ -45,20 +44,19 @@ model User {
 
   isEmailVerified Boolean @default(false)
 
-  googleId String?    @unique
+  googleId String? @unique
 
-  currency String     @default("USD")
+  currency String @default("USD")
 
-  role     UserRole   @default(USER)
-  status   UserStatus @default(ACTIVE)
- 
+  role   UserRole   @default(USER)
+  status UserStatus @default(ACTIVE)
+
   transactions Transaction[]
   categories   Category[] // user-created categories
   budgets      Budget[]
 
   otps          Otp[]
   sessions      Session[]
-  subscriptions Subscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -125,7 +123,6 @@ model BudgetAllocation {
   @@unique([budgetId, categoryId]) // one allocation per category per budget/month
 }
 
-// ======= OTP =======
 model Otp {
   id        String   @id @default(uuid())
   userId    String
@@ -156,18 +153,4 @@ model Session {
   @@index([userId])
 }
 
-// // ======= SUBSCRIPTION =======
-model Subscription {
-  id                String             @id @default(ulid())
-  userId            String
-  plan              SubscriptionPlan
-  status            SubscriptionStatus @default(PENDING)
-  startDate         DateTime
-  endDate           DateTime
-  providerPaymentId String? // Stripe/ Razorpay payment id
-  providerOrderId   String? // if provider returns order id
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
