@@ -1,8 +1,7 @@
 import prisma from "../../config/prisma";
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma, User } from "../../generated/prisma/client";
 import logger from "../../config/logger";
 
-// Prisma error codes as named constants
 const PRISMA_ERROR = {
   RECORD_NOT_FOUND: "P2025",
   UNIQUE_CONSTRAINT_VIOLATION: "P2002",
@@ -10,7 +9,8 @@ const PRISMA_ERROR = {
   REQUIRED_RELATION_NOT_SATISFIED: "P2014",
 } as const;
 
-// Type guard to check if error is a Prisma known request error
+// Since we catch `unknown` errors, we need a type guard to safely check
+// if the error is a Prisma error with a `code` property
 function isPrismaError(
   error: unknown
 ): error is { code: string; message: string } {
@@ -22,39 +22,48 @@ function isPrismaError(
   );
 }
 
-// Result type for operations that might fail
-export type RepositoryResult<T> =
-  | { success: true; data: T }
-  | {
-      success: false;
-      error: "NOT_FOUND" | "DUPLICATE" | "UNKNOWN";
-      message: string;
-    };
+// These types use the "discriminated union" pattern with `success` as the
+// discriminant. This allows TypeScript to narrow types correctly:
+//
+// Example usage:
+//   const result = await UserRepository.createUser(data);
+//   if (result.success) {
+//     // TypeScript knows: result.data is User (not undefined)
+//   } else {
+//     // TypeScript knows: result.error, result.statusCode, result.message exist
+//   }
 
+type SuccessResult<T> = {
+  success: true;
+  data: T;
+};
+
+type ErrorResult = {
+  success: false;
+  error: "NOT_FOUND" | "DUPLICATE" | "UNKNOWN";
+  statusCode: number;
+  message: string;
+};
+
+type RepositoryResult<T> = SuccessResult<T> | ErrorResult;
 export class UserRepository {
-  static async findUserByEmail(email: string) {
+  static async findUserByEmail(email: string): Promise<User | null> {
     return prisma.user.findUnique({
-      where: {
-        email,
-      },
+      where: { email },
     });
   }
 
-  static async findUserById(id: string) {
+  static async findUserById(id: string): Promise<User | null> {
     return prisma.user.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
     });
   }
 
   static async createUser(
     data: Prisma.UserCreateInput
-  ): Promise<RepositoryResult<Prisma.UserGetPayload<object>>> {
+  ): Promise<RepositoryResult<User>> {
     try {
-      const user = await prisma.user.create({
-        data,
-      });
+      const user = await prisma.user.create({ data });
       return { success: true, data: user };
     } catch (error) {
       if (isPrismaError(error)) {
@@ -62,14 +71,18 @@ export class UserRepository {
           return {
             success: false,
             error: "DUPLICATE",
+            statusCode: 409,
             message: "User with this email already exists",
           };
         }
       }
+
+
       logger.error("UserRepository.createUser failed", { error });
       return {
         success: false,
         error: "UNKNOWN",
+        statusCode: 500,
         message: "Failed to create user",
       };
     }
@@ -78,12 +91,10 @@ export class UserRepository {
   static async updateUser(
     id: string,
     data: Prisma.UserUpdateInput
-  ): Promise<RepositoryResult<Prisma.UserGetPayload<object>>> {
+  ): Promise<RepositoryResult<User>> {
     try {
       const user = await prisma.user.update({
-        where: {
-          id,
-        },
+        where: { id },
         data,
       });
       return { success: true, data: user };
@@ -93,6 +104,7 @@ export class UserRepository {
           return {
             success: false,
             error: "NOT_FOUND",
+            statusCode: 404,
             message: "User not found",
           };
         }
@@ -100,27 +112,26 @@ export class UserRepository {
           return {
             success: false,
             error: "DUPLICATE",
+            statusCode: 409,
             message: "Email already in use",
           };
         }
       }
+
       logger.error("UserRepository.updateUser failed", { id, error });
       return {
         success: false,
         error: "UNKNOWN",
+        statusCode: 500,
         message: "Failed to update user",
       };
     }
   }
 
-  static async deleteUser(
-    id: string
-  ): Promise<RepositoryResult<Prisma.UserGetPayload<object>>> {
+  static async deleteUser(id: string): Promise<RepositoryResult<User>> {
     try {
       const user = await prisma.user.delete({
-        where: {
-          id,
-        },
+        where: { id },
       });
       return { success: true, data: user };
     } catch (error) {
@@ -129,14 +140,17 @@ export class UserRepository {
           return {
             success: false,
             error: "NOT_FOUND",
+            statusCode: 404,
             message: "User not found",
           };
         }
       }
+
       logger.error("UserRepository.deleteUser failed", { id, error });
       return {
         success: false,
         error: "UNKNOWN",
+        statusCode: 500,
         message: "Failed to delete user",
       };
     }

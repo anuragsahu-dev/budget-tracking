@@ -11,7 +11,7 @@ export const emailSchemaOnly = z.object({
 
 export type EmailInput = z.infer<typeof emailSchemaOnly>;
 
-const otp = z.string().min(6).max(6);
+const otp = z.string().regex(/^\d{6}$/, "OTP must be exactly 6 digits");
 
 export const verifySchema = z.object({
   email,

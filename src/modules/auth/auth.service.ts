@@ -1,6 +1,6 @@
 import { otpService } from "../otp/otp.service";
 import { ApiError } from "../../middlewares/error.middleware";
-import type { EmailInput, VerifyInput } from "./auth.validation";
+import type { EmailInput, VerifyInput, FullNameInput } from "./auth.validation";
 import { UserRepository } from "../user/user.repository";
 
 export class AuthService {
@@ -14,10 +14,11 @@ export class AuthService {
       });
 
       if (!result.success) {
-        if (result.error === "DUPLICATE") {
-          throw new ApiError(409, result.message, result.error);
-        }
-        throw new ApiError(500, result.message, result.error);
+        throw new ApiError(
+          result.statusCode as number,
+          result.message as string,
+          result.error as string
+        );
       }
 
       user = result.data;
@@ -40,10 +41,7 @@ export class AuthService {
     });
 
     if (!updateResult.success) {
-      if (updateResult.error === "NOT_FOUND") {
-        throw new ApiError(404, updateResult.message);
-      }
-      throw new ApiError(500, updateResult.message);
+      throw new ApiError(updateResult.statusCode, "failed to verify email");
     }
 
     const updatedUser = updateResult.data;
@@ -57,5 +55,63 @@ export class AuthService {
     };
 
     return { message: "Email verified successfully", data: responseData };
+  }
+
+  static async setName(data: FullNameInput, id: string) {
+    const user = await UserRepository.findUserById(id);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    const updateResult = await UserRepository.updateUser(user.id, {
+      fullName: data.fullName,
+    });
+
+    if (!updateResult.success) {
+      throw new ApiError(updateResult.statusCode, "failed to update name");
+    }
+
+    const updatedUser = updateResult.data;
+
+    const responseData = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      fullName: updatedUser.fullName,
+    };
+
+    return responseData;
+  }
+
+  static async me(id: string) {
+    const user = await UserRepository.findUserById(id);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    const responseData = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      fullName: user.fullName,
+    };
+
+    return responseData;
+  }
+  
+  static async logout(id: string) {
+    const user = await UserRepository.findUserById(id);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    const responseData = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      fullName: user.fullName,
+    };
+
+    return responseData;
   }
 }
