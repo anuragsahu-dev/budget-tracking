@@ -59,7 +59,6 @@ if (config.server.nodeEnv !== "production") {
   );
 }
 
-
 const logger = createLogger({
   level: logLevel,
   format: fileFormat,
@@ -72,7 +71,7 @@ const logger = createLogger({
 export default logger;
 
 /*
-🔹 Why errors go to both app-YYYY-MM-DD.log and error-YYYY-MM-DD.log
+Why errors go to both app-YYYY-MM-DD.log and error-YYYY-MM-DD.log
 
 Single place for all logs (app.log)
 
@@ -86,7 +85,7 @@ DB query took long (warn)
 
 Query failed (error)
 
-Without errors in app.log, you’d lose continuity.
+Without errors in app.log, you'd lose continuity.
 
 Dedicated file for errors (error.log)
 

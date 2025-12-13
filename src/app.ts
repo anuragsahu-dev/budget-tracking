@@ -5,14 +5,11 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import passport from "passport";
 
-import { redisRateLimiter } from "./database/redis";
 import { globalErrorHandler, ApiError } from "./middlewares/error.middleware";
+import authRouter from "./modules/auth/auth.route";
+import userRouter from "./modules/user/user.route";
 
-import "./config/passport";
-
-import healthRouter from "./routes/healthCheck.route";
-import userRouter from "./routes/user.route";
-import authRouter from "./routes/auth.route";
+import { globalLimiter } from "./middlewares/rateLimit.middleware";
 
 const app = express();
 
@@ -22,15 +19,7 @@ app.use(hpp());
 
 // --- Rate Limiter ---
 // Global limiter for all /api routes
-app.use(
-  "/api",
-  redisRateLimiter({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    keyPrefix: "global:",
-    message: "Too many requests, please try again later.",
-  })
-);
+app.use("/api", globalLimiter);
 
 // body parser
 app.use(express.json({ limit: "16kb" }));
@@ -58,9 +47,8 @@ app.use(
 app.use(passport.initialize());
 
 // api routes
-app.use("/healthCheck", healthRouter);
-app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", userRouter);
 
 // 404 handler
 app.use((_req, _res, next) => {

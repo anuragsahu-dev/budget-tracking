@@ -7,13 +7,12 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install 
 
-# Copy app files
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
+RUN npx prisma generate && npm run build
 
-# Expose port
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && npm run dev"]
+ENV NODE_ENV=development
+
+CMD ["npm", "start"]
