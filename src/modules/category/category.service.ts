@@ -5,6 +5,7 @@ import type {
   UpdateCategoryInput,
 } from "./category.validation";
 import logger from "../../config/logger";
+import { generateSlug } from "../../utils/slug";
 
 export class CategoryService {
   /**
@@ -19,6 +20,7 @@ export class CategoryService {
     return categories.map((category) => ({
       id: category.id,
       name: category.name,
+      slug: category.slug,
       color: category.color,
       isSystem: category.userId === null,
       createdAt: category.createdAt,
@@ -43,6 +45,7 @@ export class CategoryService {
     return {
       id: category.id,
       name: category.name,
+      slug: category.slug,
       color: category.color,
       isSystem: category.userId === null,
       createdAt: category.createdAt,
@@ -53,30 +56,39 @@ export class CategoryService {
    * Create a new user category
    */
   static async createCategory(userId: string, data: CreateCategoryInput) {
-    // Check if name conflicts with a system category
-    const systemCategory = await CategoryRepository.findSystemCategoryByName(
-      data.name
+    // Generate slug from category name
+    const slug = generateSlug(data.name);
+
+    // Check if slug conflicts with a system category
+    // This prevents users from creating categories that normalize to the same slug as system categories
+    const systemCategory = await CategoryRepository.findSystemCategoryBySlug(
+      slug
     );
 
     if (systemCategory) {
       throw new ApiError(
         409,
-        "A system category with this name already exists. Please choose a different name."
+        `A system category with a similar name already exists ("${systemCategory.name}"). Please choose a different name.`
       );
     }
 
-    // Check if user already has a category with this name
-    const userCategory = await CategoryRepository.findByNameAndUser(
-      data.name,
+    // Check if user already has a category with this slug
+    // This allows different users to have categories with the same slug
+    const userCategory = await CategoryRepository.findBySlugAndUser(
+      slug,
       userId
     );
 
     if (userCategory) {
-      throw new ApiError(409, "You already have a category with this name");
+      throw new ApiError(
+        409,
+        "You already have a category with a similar name"
+      );
     }
 
     const result = await CategoryRepository.create({
       name: data.name,
+      slug,
       color: data.color ?? null,
       user: { connect: { id: userId } },
     });
@@ -87,11 +99,12 @@ export class CategoryService {
 
     const category = result.data;
 
-    logger.info("Category created", { userId, categoryId: category.id });
+    logger.info("Category created", { userId, categoryId: category.id, slug });
 
     return {
       id: category.id,
       name: category.name,
+      slug: category.slug,
       color: category.color,
       isSystem: false,
       createdAt: category.createdAt,
@@ -121,32 +134,44 @@ export class CategoryService {
       throw new ApiError(403, "You do not have access to this category");
     }
 
-    // Check for duplicate name if name is being changed
+    // Build update object with only provided fields
+    const updateData: { name?: string; slug?: string; color?: string | null } =
+      {};
+
+    // Check for duplicate slug if name is being changed
     if (data.name && data.name !== category.name) {
-      // Check against system categories
-      const systemCategory = await CategoryRepository.findSystemCategoryByName(
-        data.name
-      );
-      if (systemCategory) {
-        throw new ApiError(
-          409,
-          "A system category with this name already exists. Please choose a different name."
+      const newSlug = generateSlug(data.name);
+
+      // Only validate slug conflicts if the slug actually changes
+      if (newSlug !== category.slug) {
+        // Check against system categories
+        const systemCategory =
+          await CategoryRepository.findSystemCategoryBySlug(newSlug);
+        if (systemCategory) {
+          throw new ApiError(
+            409,
+            `A system category with a similar name already exists ("${systemCategory.name}"). Please choose a different name.`
+          );
+        }
+
+        // Check against user's own categories
+        const userCategory = await CategoryRepository.findBySlugAndUser(
+          newSlug,
+          userId
         );
+        if (userCategory && userCategory.id !== categoryId) {
+          throw new ApiError(
+            409,
+            "You already have a category with a similar name"
+          );
+        }
+
+        updateData.slug = newSlug;
       }
 
-      // Check against user's own categories
-      const userCategory = await CategoryRepository.findByNameAndUser(
-        data.name,
-        userId
-      );
-      if (userCategory && userCategory.id !== categoryId) {
-        throw new ApiError(409, "You already have a category with this name");
-      }
+      updateData.name = data.name;
     }
 
-    // Build update object with only provided fields
-    const updateData: { name?: string; color?: string | null } = {};
-    if (data.name !== undefined) updateData.name = data.name;
     if (data.color !== undefined) updateData.color = data.color;
 
     if (Object.keys(updateData).length === 0) {
@@ -166,6 +191,7 @@ export class CategoryService {
     return {
       id: updatedCategory.id,
       name: updatedCategory.name,
+      slug: updatedCategory.slug,
       color: updatedCategory.color,
       isSystem: false,
       createdAt: updatedCategory.createdAt,

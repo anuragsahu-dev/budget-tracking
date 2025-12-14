@@ -9,6 +9,10 @@ import { globalErrorHandler, ApiError } from "./middlewares/error.middleware";
 import authRouter from "./modules/auth/auth.route";
 import userRouter from "./modules/user/user.route";
 import categoryRouter from "./modules/category/category.route";
+import transactionRouter from "./modules/transaction/transaction.route";
+import budgetRouter from "./modules/budget/budget.route";
+import adminRouter from "./modules/admin/admin.route";
+import analyticsRouter from "./modules/analytics/analytics.route";
 
 import "./config/passport";
 
@@ -53,6 +57,10 @@ app.use(passport.initialize());
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/categories", categoryRouter);
+app.use("/api/v1/transactions", transactionRouter);
+app.use("/api/v1/budgets", budgetRouter);
+app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/analytics", analyticsRouter);
 
 // 404 handler
 app.use((_req, _res, next) => {

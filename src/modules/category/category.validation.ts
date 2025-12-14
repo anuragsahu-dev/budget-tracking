@@ -16,7 +16,6 @@ const catagoryNameSchema = z
   .min(2, "Category name must be at least 2 characters")
   .max(50, "Category name must not exceed 50 characters");
 
-// ======= CREATE CATEGORY =======
 export const createCategorySchema = z.object({
   name: catagoryNameSchema,
   color: hexColorSchema,
@@ -37,7 +36,6 @@ export const categoryIdParamSchema = z.object({
 
 export type CategoryIdParam = z.infer<typeof categoryIdParamSchema>;
 
-// ======= LIST CATEGORIES QUERY =======
 export const listCategoriesQuerySchema = z.object({
   includeSystem: z
     .enum(["true", "false"])
