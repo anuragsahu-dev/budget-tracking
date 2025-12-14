@@ -59,7 +59,7 @@ export class CategoryRepository {
       ) {
         return duplicateError("Category with this name already exists");
       }
-      return unknownError("create category", error);
+      return unknownError("Failed to create category", error);
     }
   }
 
@@ -75,9 +75,9 @@ export class CategoryRepository {
         isPrismaError(error) &&
         error.code === PRISMA_ERROR.RECORD_NOT_FOUND
       ) {
-        return notFoundError("Category");
+        return notFoundError("Category not found");
       }
-      return unknownError("update category", error);
+      return unknownError("Failed to update category", error);
     }
   }
 
@@ -88,7 +88,7 @@ export class CategoryRepository {
     } catch (error) {
       if (isPrismaError(error)) {
         if (error.code === PRISMA_ERROR.RECORD_NOT_FOUND) {
-          return notFoundError("Category");
+          return notFoundError("Category not found");
         }
         if (error.code === PRISMA_ERROR.FOREIGN_KEY_CONSTRAINT_VIOLATION) {
           return inUseError(
@@ -96,7 +96,7 @@ export class CategoryRepository {
           );
         }
       }
-      return unknownError("delete category", error);
+      return unknownError("Failed to delete category", error);
     }
   }
 

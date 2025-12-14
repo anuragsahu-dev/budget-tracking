@@ -18,7 +18,7 @@ export class SessionRepository {
       const session = await prisma.session.create({ data });
       return { success: true, data: session };
     } catch (error) {
-      return unknownError("create session", error);
+      return unknownError("Failed to create session", error);
     }
   }
 
@@ -50,9 +50,9 @@ export class SessionRepository {
         isPrismaError(error) &&
         error.code === PRISMA_ERROR.RECORD_NOT_FOUND
       ) {
-        return notFoundError("Session");
+        return notFoundError("Session not found");
       }
-      return unknownError("revoke session", error);
+      return unknownError("Failed to revoke session", error);
     }
   }
 
@@ -66,12 +66,12 @@ export class SessionRepository {
       });
 
       if (result.count === 0) {
-        return notFoundError("Session");
+        return notFoundError("Session not found or already revoked");
       }
 
       return { success: true, data: {} as Session };
     } catch (error) {
-      return unknownError("revoke session", error);
+      return unknownError("Failed to revoke session", error);
     }
   }
 
@@ -85,7 +85,7 @@ export class SessionRepository {
       });
       return { success: true, data: { count: result.count } };
     } catch (error) {
-      return unknownError("revoke sessions", error);
+      return unknownError("Failed to revoke all sessions", error);
     }
   }
 

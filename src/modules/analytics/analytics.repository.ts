@@ -1,34 +1,13 @@
 import prisma from "../../config/prisma";
 import { TransactionType } from "../../generated/prisma/client";
+import type {
+  MonthlySummary,
+  CategoryBreakdown,
+  MonthlyTrend,
+} from "./analytics.types";
 
-// Monthly summary result
-export interface MonthlySummary {
-  month: number;
-  year: number;
-  totalIncome: number;
-  totalExpense: number;
-  netBalance: number;
-  transactionCount: number;
-}
-
-// Category breakdown item
-export interface CategoryBreakdown {
-  categoryId: string | null;
-  categoryName: string;
-  categoryColor: string | null;
-  total: number;
-  percentage: number;
-  transactionCount: number;
-}
-
-// Monthly trend item
-export interface MonthlyTrend {
-  month: number;
-  year: number;
-  income: number;
-  expense: number;
-  netBalance: number;
-}
+// Re-export types for consumers
+export type { MonthlySummary, CategoryBreakdown, MonthlyTrend };
 
 export class AnalyticsRepository {
   /**
@@ -94,92 +73,33 @@ export class AnalyticsRepository {
     transactionCount: number;
     monthlyBreakdown: MonthlySummary[];
   }> {
-    const startDate = new Date(year, 0, 1);
-    const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+    // Get monthly breakdown by fetching summary for each month
+    const monthlyPromises = Array.from({ length: 12 }, (_, i) =>
+      this.getMonthlySummary(userId, i + 1, year)
+    );
 
-    // Get yearly totals
-    const [incomeResult, expenseResult, countResult] = await Promise.all([
-      prisma.transaction.aggregate({
-        where: {
-          userId,
-          type: "INCOME",
-          date: { gte: startDate, lte: endDate },
-        },
-        _sum: { amount: true },
-      }),
-      prisma.transaction.aggregate({
-        where: {
-          userId,
-          type: "EXPENSE",
-          date: { gte: startDate, lte: endDate },
-        },
-        _sum: { amount: true },
-      }),
-      prisma.transaction.count({
-        where: {
-          userId,
-          date: { gte: startDate, lte: endDate },
-        },
-      }),
-    ]);
+    const monthlyBreakdown = await Promise.all(monthlyPromises);
 
-    // Get monthly breakdown using raw SQL for efficiency
-    const monthlyData = await prisma.$queryRaw<
-      { month: number; type: string; total: number; count: bigint }[]
-    >`
-      SELECT 
-        EXTRACT(MONTH FROM date)::int as month,
-        type,
-        COALESCE(SUM(amount), 0) as total,
-        COUNT(*) as count
-      FROM "Transaction"
-      WHERE "userId" = ${userId}
-        AND date >= ${startDate}
-        AND date <= ${endDate}
-      GROUP BY EXTRACT(MONTH FROM date), type
-      ORDER BY month
-    `;
-
-    // Process monthly breakdown
-    const monthlyMap = new Map<
-      number,
-      { income: number; expense: number; count: number }
-    >();
-
-    for (let m = 1; m <= 12; m++) {
-      monthlyMap.set(m, { income: 0, expense: 0, count: 0 });
-    }
-
-    for (const row of monthlyData) {
-      const existing = monthlyMap.get(row.month)!;
-      if (row.type === "INCOME") {
-        existing.income = Number(row.total);
-      } else {
-        existing.expense = Number(row.total);
-      }
-      existing.count += Number(row.count);
-    }
-
-    const monthlyBreakdown: MonthlySummary[] = Array.from(
-      monthlyMap.entries()
-    ).map(([month, data]) => ({
-      month,
-      year,
-      totalIncome: data.income,
-      totalExpense: data.expense,
-      netBalance: data.income - data.expense,
-      transactionCount: data.count,
-    }));
-
-    const totalIncome = Number(incomeResult._sum.amount ?? 0);
-    const totalExpense = Number(expenseResult._sum.amount ?? 0);
+    // Calculate yearly totals from monthly data
+    const totalIncome = monthlyBreakdown.reduce(
+      (sum, m) => sum + m.totalIncome,
+      0
+    );
+    const totalExpense = monthlyBreakdown.reduce(
+      (sum, m) => sum + m.totalExpense,
+      0
+    );
+    const transactionCount = monthlyBreakdown.reduce(
+      (sum, m) => sum + m.transactionCount,
+      0
+    );
 
     return {
       year,
       totalIncome,
       totalExpense,
       netBalance: totalIncome - totalExpense,
-      transactionCount: countResult,
+      transactionCount,
       monthlyBreakdown,
     };
   }

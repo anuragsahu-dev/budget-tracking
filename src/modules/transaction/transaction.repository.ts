@@ -9,15 +9,17 @@ import {
   notFoundError,
   unknownError,
 } from "../../utils/repository.utils";
+import type {
+  TransactionWithCategory,
+  TransactionFilters,
+  TransactionPaginationOptions,
+} from "./transaction.types";
 
-// Type for transaction with category
-export type TransactionWithCategory = Transaction & {
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    color: string | null;
-  } | null;
+// Re-export types for consumers
+export type {
+  TransactionWithCategory,
+  TransactionFilters,
+  TransactionPaginationOptions,
 };
 
 // Category select for includes
@@ -27,21 +29,6 @@ const CATEGORY_SELECT = {
   slug: true,
   color: true,
 } as const;
-
-export interface TransactionFilters {
-  userId: string;
-  type?: "INCOME" | "EXPENSE";
-  categoryId?: string;
-  from?: Date;
-  to?: Date;
-}
-
-export interface TransactionPaginationOptions {
-  page: number;
-  limit: number;
-  sortBy: "date" | "amount" | "createdAt";
-  sortOrder: "asc" | "desc";
-}
 
 function invalidCategoryError(): RepositoryResult<never> {
   return {
@@ -121,7 +108,7 @@ export class TransactionRepository {
       ) {
         return invalidCategoryError();
       }
-      return unknownError("create transaction", error);
+      return unknownError("Failed to create transaction", error);
     }
   }
 
@@ -139,13 +126,13 @@ export class TransactionRepository {
     } catch (error) {
       if (isPrismaError(error)) {
         if (error.code === PRISMA_ERROR.RECORD_NOT_FOUND) {
-          return notFoundError("Transaction");
+          return notFoundError("Transaction not found");
         }
         if (error.code === PRISMA_ERROR.FOREIGN_KEY_CONSTRAINT_VIOLATION) {
           return invalidCategoryError();
         }
       }
-      return unknownError("update transaction", error);
+      return unknownError("Failed to update transaction", error);
     }
   }
 
@@ -158,9 +145,9 @@ export class TransactionRepository {
         isPrismaError(error) &&
         error.code === PRISMA_ERROR.RECORD_NOT_FOUND
       ) {
-        return notFoundError("Transaction");
+        return notFoundError("Transaction not found");
       }
-      return unknownError("delete transaction", error);
+      return unknownError("Failed to delete transaction", error);
     }
   }
 

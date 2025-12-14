@@ -14,6 +14,20 @@ import {
   duplicateError,
   unknownError,
 } from "../../utils/repository.utils";
+import type {
+  BudgetWithAllocations,
+  BudgetFilters,
+  BudgetPaginationOptions,
+  AllocationWithCategory,
+} from "./budget.types";
+
+// Re-export types for consumers
+export type {
+  BudgetWithAllocations,
+  BudgetFilters,
+  BudgetPaginationOptions,
+  AllocationWithCategory,
+};
 
 // Category select constant
 const CATEGORY_SELECT = {
@@ -31,30 +45,6 @@ const ALLOCATIONS_INCLUDE = {
     },
   },
 } as const;
-
-// Types
-type CategorySelect = {
-  id: string;
-  name: string;
-  slug: string;
-  color: string | null;
-};
-type AllocationWithCategory = BudgetAllocation & { category: CategorySelect };
-
-export type BudgetWithAllocations = Budget & {
-  allocations: AllocationWithCategory[];
-};
-
-export interface BudgetFilters {
-  userId: string;
-  month?: number;
-  year?: number;
-}
-
-export interface BudgetPaginationOptions {
-  page: number;
-  limit: number;
-}
 
 function invalidCategoryError(): RepositoryResult<never> {
   return {
@@ -130,7 +120,7 @@ export class BudgetRepository {
           "A budget for this month and year already exists"
         );
       }
-      return unknownError("create budget", error);
+      return unknownError("Failed to create budget", error);
     }
   }
 
@@ -150,9 +140,9 @@ export class BudgetRepository {
         isPrismaError(error) &&
         error.code === PRISMA_ERROR.RECORD_NOT_FOUND
       ) {
-        return notFoundError("Budget");
+        return notFoundError("Budget not found");
       }
-      return unknownError("update budget", error);
+      return unknownError("Failed to update budget", error);
     }
   }
 
@@ -165,9 +155,9 @@ export class BudgetRepository {
         isPrismaError(error) &&
         error.code === PRISMA_ERROR.RECORD_NOT_FOUND
       ) {
-        return notFoundError("Budget");
+        return notFoundError("Budget not found");
       }
-      return unknownError("delete budget", error);
+      return unknownError("Failed to delete budget", error);
     }
   }
 
@@ -211,7 +201,7 @@ export class BudgetRepository {
           return invalidCategoryError();
         }
       }
-      return unknownError("create allocation", error);
+      return unknownError("Failed to create budget allocation", error);
     }
   }
 
@@ -231,9 +221,9 @@ export class BudgetRepository {
         isPrismaError(error) &&
         error.code === PRISMA_ERROR.RECORD_NOT_FOUND
       ) {
-        return notFoundError("Allocation");
+        return notFoundError("Budget allocation not found");
       }
-      return unknownError("update allocation", error);
+      return unknownError("Failed to update budget allocation", error);
     }
   }
 
@@ -250,9 +240,9 @@ export class BudgetRepository {
         isPrismaError(error) &&
         error.code === PRISMA_ERROR.RECORD_NOT_FOUND
       ) {
-        return notFoundError("Allocation");
+        return notFoundError("Budget allocation not found");
       }
-      return unknownError("delete allocation", error);
+      return unknownError("Failed to delete budget allocation", error);
     }
   }
 }

@@ -1,0 +1,161 @@
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 13:18:04"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 13:18:04"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 13:18:04"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 13:18:04"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 13:18:26"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 13:18:26"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 13:18:26"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 13:18:26"}
+{"level":"info","message":"OTP created for user 01KCEG93SJGNTDDTVAXHSXD9PV","timestamp":"2025-12-14 13:19:56"}
+{"level":"info","message":"OTP verified successfully for user 01KCEG93SJGNTDDTVAXHSXD9PV","timestamp":"2025-12-14 13:20:18"}
+{"level":"info","message":"Session created successfully","timestamp":"2025-12-14 13:20:18","userId":"01KCEG93SJGNTDDTVAXHSXD9PV"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 13:28:41"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 13:28:41"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 13:28:41"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 13:28:41"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 13:28:48"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 13:28:48"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 13:28:48"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 13:28:48"}
+{"level":"info","message":"OTP created for user 01KCEG93SJGNTDDTVAXHSXD9PV","timestamp":"2025-12-14 13:31:31"}
+{"level":"info","message":"OTP verified successfully for user 01KCEG93SJGNTDDTVAXHSXD9PV","timestamp":"2025-12-14 13:31:46"}
+{"level":"info","message":"Session created successfully","timestamp":"2025-12-14 13:31:46","userId":"01KCEG93SJGNTDDTVAXHSXD9PV"}
+{"email":"anuragsahu.dev@gmail.com","googleId":"107272745054253607784","level":"info","message":"Google login successful","timestamp":"2025-12-14 13:35:37","userId":"01KCEH5TTQ1TQSTG86FDB32WEG"}
+{"level":"info","message":"Session created successfully","timestamp":"2025-12-14 13:35:37","userId":"01KCEH5TTQ1TQSTG86FDB32WEG"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 14:23:41"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:23:41"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:23:41"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 14:23:41"}
+{"categoryId":"01KCEKZT1NTFJNKCHQ8H39R2X3","level":"info","message":"Category created","slug":"clothes","timestamp":"2025-12-14 14:24:46","userId":"01KCEG93SJGNTDDTVAXHSXD9PV"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 14:40:54"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:40:54"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:40:54"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 14:40:54"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 14:41:16"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:41:16"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:41:16"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 14:41:16"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 14:44:09"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:44:09"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:44:09"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 14:44:09"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 14:46:09"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:46:09"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:46:09"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 14:46:09"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 14:48:53"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:48:53"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 14:48:53"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 14:48:53"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 15:26:57"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:26:57"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:26:57"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 15:26:57"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 15:27:10"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:27:10"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:27:10"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 15:27:10"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 15:35:45"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:35:45"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:35:45"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 15:35:45"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 15:35:58"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:35:58"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:35:58"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 15:35:58"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 15:36:11"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:36:11"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:36:11"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 15:36:11"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 15:42:43"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:42:43"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:42:43"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 15:42:43"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 15:47:40"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:47:40"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 15:47:40"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 15:47:40"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:05:31"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:05:31"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:05:31"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:05:31"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:11:07"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:11:07"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:11:07"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:11:07"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:11:25"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:11:25"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:11:25"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:11:25"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:11:43"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:11:43"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:11:43"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:11:43"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:11:57"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:11:57"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:11:57"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:11:57"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:12:15"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:12:15"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:12:15"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:12:15"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:12:29"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:12:29"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:12:29"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:12:29"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:20:50"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:20:50"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:20:50"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:20:50"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:21:09"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:21:09"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:21:09"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:21:09"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:21:38"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:21:38"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:21:38"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:21:38"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:21:53"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:21:53"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:21:53"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:21:53"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:22:04"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:22:04"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:22:04"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:22:04"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:25:53"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:25:53"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:25:53"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:25:53"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:26:11"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:26:11"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:26:11"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:26:11"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:26:31"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:26:31"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:26:31"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:26:31"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:26:49"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:26:49"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:26:49"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:26:49"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:27:11"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:27:11"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:27:11"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:27:11"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:27:32"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:27:32"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:27:32"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:27:32"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:27:53"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:27:53"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:27:53"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:27:53"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 16:29:52"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:29:52"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 16:29:52"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 16:29:52"}
+{"level":"info","message":"Database connected","timestamp":"2025-12-14 17:12:14"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 17:12:14"}
+{"level":"info","message":"Redis connected","timestamp":"2025-12-14 17:12:14"}
+{"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-14 17:12:14"}

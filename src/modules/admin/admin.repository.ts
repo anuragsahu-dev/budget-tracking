@@ -17,20 +17,10 @@ import {
   unknownError,
 } from "../../utils/repository.utils";
 import { CategoryRepository } from "../category/category.repository";
+import type { SafeUser, UserFilters, PaginationOptions } from "./admin.types";
 
-// User type without sensitive data
-export type SafeUser = {
-  id: string;
-  email: string;
-  fullName: string | null;
-  isEmailVerified: boolean;
-  googleId: string | null;
-  currency: string;
-  role: UserRole;
-  status: UserStatus;
-  createdAt: Date;
-  updatedAt: Date;
-};
+// Re-export types for consumers
+export type { SafeUser, UserFilters, PaginationOptions };
 
 // Safe user select fields
 const SAFE_USER_SELECT = {
@@ -45,19 +35,6 @@ const SAFE_USER_SELECT = {
   createdAt: true,
   updatedAt: true,
 } as const;
-
-export interface UserFilters {
-  role?: UserRole;
-  status?: UserStatus;
-  search?: string;
-}
-
-export interface PaginationOptions {
-  page: number;
-  limit: number;
-  sortBy: string;
-  sortOrder: "asc" | "desc";
-}
 
 export class AdminRepository {
   // ========== SYSTEM CATEGORY METHODS ==========
@@ -95,7 +72,7 @@ export class AdminRepository {
           "A system category with this name already exists"
         );
       }
-      return unknownError("create system category", error);
+      return unknownError("Failed to create system category", error);
     }
   }
 
@@ -109,7 +86,7 @@ export class AdminRepository {
     } catch (error) {
       if (isPrismaError(error)) {
         if (error.code === PRISMA_ERROR.RECORD_NOT_FOUND) {
-          return notFoundError("System category");
+          return notFoundError("System category not found");
         }
         if (error.code === PRISMA_ERROR.UNIQUE_CONSTRAINT_VIOLATION) {
           return duplicateError(
@@ -117,7 +94,7 @@ export class AdminRepository {
           );
         }
       }
-      return unknownError("update system category", error);
+      return unknownError("Failed to update system category", error);
     }
   }
 
@@ -130,7 +107,7 @@ export class AdminRepository {
     } catch (error) {
       if (isPrismaError(error)) {
         if (error.code === PRISMA_ERROR.RECORD_NOT_FOUND) {
-          return notFoundError("System category");
+          return notFoundError("System category not found");
         }
         if (error.code === PRISMA_ERROR.FOREIGN_KEY_CONSTRAINT_VIOLATION) {
           return inUseError(
@@ -138,7 +115,7 @@ export class AdminRepository {
           );
         }
       }
-      return unknownError("delete system category", error);
+      return unknownError("Failed to delete system category", error);
     }
   }
 
@@ -209,9 +186,9 @@ export class AdminRepository {
         isPrismaError(error) &&
         error.code === PRISMA_ERROR.RECORD_NOT_FOUND
       ) {
-        return notFoundError("User");
+        return notFoundError("User not found");
       }
-      return unknownError("update user status", error);
+      return unknownError("Failed to update user status", error);
     }
   }
 

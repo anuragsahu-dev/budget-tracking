@@ -38,6 +38,7 @@ async function verifyBudgetOwnership(budgetId: string, userId: string) {
 }
 
 export class BudgetService {
+  
   static async getAllBudgets(userId: string, query: ListBudgetsQuery) {
     const result = await BudgetRepository.findAllByUser(
       { userId, month: query.month, year: query.year },

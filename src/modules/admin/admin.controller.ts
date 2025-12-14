@@ -3,12 +3,12 @@ import type { Request, Response } from "express";
 import { AdminService } from "./admin.service";
 import { sendApiResponse } from "../../utils/apiResponse";
 import {
-  getValidatedBody,
+  getValidatedBody,  
   getValidatedParams,
   getValidatedQuery,
 } from "../../types/express";
 import type {
-  CreateSystemCategoryInput,
+  CreateSystemCategoryInput,  
   UpdateSystemCategoryInput,
   SystemCategoryIdParam,
   UserIdParam,
@@ -18,7 +18,7 @@ import type {
 } from "./admin.validation";
 
 export const AdminController = {
-  // ========== SYSTEM CATEGORY ENDPOINTS ==========
+
 
   getAllSystemCategories: asyncHandler(async (_req: Request, res: Response) => {
     const categories = await AdminService.getAllSystemCategories();

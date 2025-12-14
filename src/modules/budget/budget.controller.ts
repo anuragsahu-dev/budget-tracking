@@ -19,7 +19,6 @@ import type {
 } from "./budget.validation";
 
 export const BudgetController = {
-  // ========== BUDGET ENDPOINTS ==========
 
   getAllBudgets: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;

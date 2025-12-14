@@ -36,6 +36,7 @@ services:
       - postgres
       - redis
     volumes:
+      - ./:/app
       - /app/node_modules
     networks:
       - budget-net

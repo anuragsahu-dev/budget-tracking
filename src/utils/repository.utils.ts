@@ -74,16 +74,25 @@ export function createPaginationMeta(
   };
 }
 
-// Standard error responses
-export function notFoundError(entity: string): ErrorResult {
+// ============ Standard Error Responses ============
+
+/**
+ * Creates a not found error result.
+ * @param message - Detailed client-facing message (e.g., "User not found")
+ */
+export function notFoundError(message: string): ErrorResult {
   return {
     success: false,
     error: "NOT_FOUND",
     statusCode: 404,
-    message: `${entity} not found`,
+    message,
   };
 }
 
+/**
+ * Creates a duplicate/conflict error result.
+ * @param message - Detailed client-facing message explaining the conflict
+ */
 export function duplicateError(message: string): ErrorResult {
   return {
     success: false,
@@ -93,6 +102,10 @@ export function duplicateError(message: string): ErrorResult {
   };
 }
 
+/**
+ * Creates an "in use" error result for resources that cannot be deleted.
+ * @param message - Detailed client-facing message explaining why deletion is blocked
+ */
 export function inUseError(message: string): ErrorResult {
   return {
     success: false,
@@ -102,12 +115,17 @@ export function inUseError(message: string): ErrorResult {
   };
 }
 
-export function unknownError(operation: string, error: unknown): ErrorResult {
-  logger.error(`${operation} failed`, { error });
+/**
+ * Creates an unknown error result for unexpected failures.
+ * @param message - Detailed client-facing message (e.g., "Failed to create budget")
+ * @param error - The caught error object for internal logging
+ */
+export function unknownError(message: string, error: unknown): ErrorResult {
+  logger.error(message, { error });
   return {
     success: false,
     error: "UNKNOWN",
     statusCode: 500,
-    message: `Failed to ${operation.toLowerCase()}`,
+    message,
   };
 }

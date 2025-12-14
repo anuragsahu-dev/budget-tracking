@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { ulidSchema } from "../../validations/common.schema";
 
-
 const transactionTypeSchema = z.enum(["INCOME", "EXPENSE"]);
 
 const amountSchema = z
@@ -37,7 +36,6 @@ export const updateTransactionSchema = z.object({
 
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 
-
 export const transactionIdParamSchema = z.object({
   id: ulidSchema,
 });
@@ -68,3 +66,12 @@ export const listTransactionsQuerySchema = z.object({
 });
 
 export type ListTransactionsQuery = z.infer<typeof listTransactionsQuerySchema>;
+
+export const transactionSummaryQuerySchema = z.object({
+  from: dateSchema.optional(),
+  to: dateSchema.optional(),
+});
+
+export type TransactionSummaryQuery = z.infer<
+  typeof transactionSummaryQuerySchema
+>;

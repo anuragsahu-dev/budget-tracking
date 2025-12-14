@@ -18,7 +18,7 @@ const catagoryNameSchema = z
 
 export const createCategorySchema = z.object({
   name: catagoryNameSchema,
-  color: hexColorSchema,
+  color: hexColorSchema.optional(),
 });
 
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;

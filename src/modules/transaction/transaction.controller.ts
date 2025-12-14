@@ -12,10 +12,10 @@ import type {
   UpdateTransactionInput,
   TransactionIdParam,
   ListTransactionsQuery,
+  TransactionSummaryQuery,
 } from "./transaction.validation";
 
 export const TransactionController = {
- 
   getAllTransactions: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;
     const query = getValidatedQuery<ListTransactionsQuery>(req);
@@ -31,7 +31,6 @@ export const TransactionController = {
     );
   }),
 
- 
   getTransactionById: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;
     const { id } = getValidatedParams<TransactionIdParam>(req);
@@ -46,7 +45,6 @@ export const TransactionController = {
     );
   }),
 
-  
   createTransaction: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;
     const data = getValidatedBody<CreateTransactionInput>(req);
@@ -63,7 +61,7 @@ export const TransactionController = {
       transaction
     );
   }),
- 
+
   updateTransaction: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;
     const { id } = getValidatedParams<TransactionIdParam>(req);
@@ -90,5 +88,23 @@ export const TransactionController = {
     const result = await TransactionService.deleteTransaction(id, userId);
 
     return sendApiResponse(res, 200, result.message, null);
+  }),
+
+  getTransactionSummary: asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.userId as string;
+    const { from, to } = getValidatedQuery<TransactionSummaryQuery>(req);
+
+    const summary = await TransactionService.getTransactionSummary(
+      userId,
+      from,
+      to
+    );
+
+    return sendApiResponse(
+      res,
+      200,
+      "Transaction summary fetched successfully",
+      summary
+    );
   }),
 };

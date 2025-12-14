@@ -31,7 +31,7 @@ export class UserRepository {
       ) {
         return duplicateError("User with this email already exists");
       }
-      return unknownError("create user", error);
+      return unknownError("Failed to create user", error);
     }
   }
 
@@ -45,13 +45,13 @@ export class UserRepository {
     } catch (error) {
       if (isPrismaError(error)) {
         if (error.code === PRISMA_ERROR.RECORD_NOT_FOUND) {
-          return notFoundError("User");
+          return notFoundError("User not found");
         }
         if (error.code === PRISMA_ERROR.UNIQUE_CONSTRAINT_VIOLATION) {
           return duplicateError("Email already in use");
         }
       }
-      return unknownError("update user", error);
+      return unknownError("Failed to update user", error);
     }
   }
 
@@ -64,9 +64,9 @@ export class UserRepository {
         isPrismaError(error) &&
         error.code === PRISMA_ERROR.RECORD_NOT_FOUND
       ) {
-        return notFoundError("User");
+        return notFoundError("User not found");
       }
-      return unknownError("delete user", error);
+      return unknownError("Failed to delete user", error);
     }
   }
 }
