@@ -2,6 +2,7 @@ import { otpService } from "../otp/otp.service";
 import { ApiError } from "../../middlewares/error.middleware";
 import type { EmailInput, VerifyInput, FullNameInput } from "./auth.validation";
 import { UserRepository } from "../user/user.repository";
+import { queueOtpEmail } from "../../jobs";
 
 export class AuthService {
   static async start(data: EmailInput) {
@@ -25,7 +26,11 @@ export class AuthService {
     }
 
     const otp = await otpService.otpForRegisterOrLogin(user.id, user.email);
-    return otp;
+
+    // Queue OTP email for background processing
+    await queueOtpEmail(user.email, otp, user.fullName ?? undefined);
+
+    return { message: "OTP sent to your email" };
   }
 
   static async verify(data: VerifyInput) {
@@ -98,7 +103,7 @@ export class AuthService {
 
     return responseData;
   }
-  
+
   static async logout(id: string) {
     const user = await UserRepository.findUserById(id);
     if (!user) {
