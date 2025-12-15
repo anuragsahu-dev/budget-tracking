@@ -251,3 +251,4 @@
 {"level":"info","message":"Email sent successfully","subject":"Your OTP Code","timestamp":"2025-12-14 18:38:46","to":"as3305100@gmail.com"}
 {"jobId":"2","level":"info","message":"Email sent successfully","timestamp":"2025-12-14 18:38:46","to":"as3305100@gmail.com","type":"OTP"}
 {"jobId":"2","level":"info","message":"Email job completed","timestamp":"2025-12-14 18:38:46","type":"OTP"}
+{"address":"172.19.0.3","code":"ECONNREFUSED","errno":-111,"level":"error","message":"Redis error: connect ECONNREFUSED 172.19.0.3:6379","port":6379,"stack":"Error: connect ECONNREFUSED 172.19.0.3:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)","syscall":"connect","timestamp":"2025-12-14 18:41:21"}

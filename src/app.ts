@@ -13,6 +13,8 @@ import transactionRouter from "./modules/transaction/transaction.route";
 import budgetRouter from "./modules/budget/budget.route";
 import adminRouter from "./modules/admin/admin.route";
 import analyticsRouter from "./modules/analytics/analytics.route";
+import paymentRouter from "./modules/payment/payment.route";
+import subscriptionRouter from "./modules/subscription/subscription.route";
 
 import "./config/passport";
 
@@ -61,6 +63,8 @@ app.use("/api/v1/transactions", transactionRouter);
 app.use("/api/v1/budgets", budgetRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/analytics", analyticsRouter);
+app.use("/api/v1/payments", paymentRouter);
+app.use("/api/v1/subscriptions", subscriptionRouter);
 
 // 404 handler
 app.use((_req, _res, next) => {

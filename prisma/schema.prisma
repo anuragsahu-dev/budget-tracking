@@ -24,8 +24,6 @@ enum TransactionType {
   EXPENSE
 }
 
-
-
 model User {
   id       String  @id @default(ulid())
   email    String  @unique
@@ -163,12 +161,6 @@ enum SubscriptionStatus {
   CANCELLED
 }
 
-// ======= PAYMENT PROVIDER =======
-enum PaymentProvider {
-  STRIPE // For global users (USD)
-  RAZORPAY // For India users (INR)
-}
-
 enum PaymentStatus {
   PENDING
   COMPLETED
@@ -197,6 +189,11 @@ model Subscription {
   @@index([expiresAt]) // For cron job to mark expired subscriptions
 }
 
+enum PaymentProvider {
+  RAZORPAY
+  STRIPE
+}
+
 // ======= PAYMENT (payment history for each subscription purchase/renewal) =======
 model Payment {
   id             String  @id @default(ulid())
@@ -206,13 +203,13 @@ model Payment {
   // Plan purchased
   plan SubscriptionPlan
 
+  provider PaymentProvider
+
   // Payment amount
   amount   Decimal @db.Decimal(12, 2)
   currency String  @db.VarChar(3) // INR, USD
 
-  // Provider details
-  provider          PaymentProvider
-  providerPaymentId String          @unique // Stripe payment_intent_id or Razorpay payment_id
+  providerPaymentId String  @unique // Stripe payment_intent_id or Razorpay payment_id
   providerOrderId   String? // Razorpay order_id (required for Razorpay verification)
 
   status PaymentStatus
