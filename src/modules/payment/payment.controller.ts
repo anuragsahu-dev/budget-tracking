@@ -72,15 +72,11 @@ export const PaymentController = {
       return sendApiResponse(res, 400, "Invalid webhook");
     }
 
-    // Handle different webhook events
-    logger.info("Webhook received", {
+    logger.info("Webhook processed", {
       event: result.event,
       paymentId: result.paymentId,
       status: result.status,
     });
-
-    // Note: Most webhook handling is backup for client-side verification
-    // Main payment processing happens in verifyPayment endpoint
 
     return sendApiResponse(res, 200, "Webhook processed");
   }),

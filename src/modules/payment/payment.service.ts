@@ -3,7 +3,6 @@ import { SubscriptionRepository } from "../subscription/subscription.repository"
 import { getPaymentProvider } from "../../infrastructure/payment";
 import { getPlanPricing } from "../../config/payment.config";
 import { ApiError } from "../../middlewares/error.middleware";
-import type { SubscriptionPlan } from "../../generated/prisma/client";
 import type { Currency } from "../../types/payment.types";
 import type {
   CreateOrderInput,
@@ -21,7 +20,7 @@ export class PaymentService {
     // Get pricing for the plan
     const pricing = getPlanPricing(plan, currency as Currency);
 
-    // Get payment provider (Razorpay)
+    // Get payment provider
     const provider = getPaymentProvider();
 
     // Create order with provider
@@ -32,34 +31,38 @@ export class PaymentService {
       plan,
     });
 
-    // Create pending payment record in database
+    if (!orderResult.success) {
+      throw new ApiError(500, orderResult.error);
+    }
+                    
+    // Create pending payment record
     const paymentResult = await PaymentRepository.createPayment({
       userId,
       plan,
       provider: "RAZORPAY",
       amount: pricing.amount / 100, // Convert paise to rupees for storage
       currency,
-      providerPaymentId: `pending_${orderResult.orderId}`, // Temporary, updated after payment
-      providerOrderId: orderResult.orderId,
+      providerPaymentId: `pending_${orderResult.data.orderId}`,
+      providerOrderId: orderResult.data.orderId,
       status: "PENDING",
     });
 
     if (!paymentResult.success) {
-      throw new ApiError(500, "Failed to create payment record");
+      throw new ApiError(paymentResult.statusCode, paymentResult.message);
     }
 
     logger.info("Payment order created", {
       userId,
       plan,
-      orderId: orderResult.orderId,
+      orderId: orderResult.data.orderId,
     });
 
     return {
-      orderId: orderResult.orderId,
+      orderId: orderResult.data.orderId,
       amount: pricing.amount,
       currency,
       plan,
-      providerData: orderResult.providerData,
+      providerData: orderResult.data.providerData,
     };
   }
 
@@ -97,7 +100,7 @@ export class PaymentService {
     if (!verifyResult.success) {
       // Update payment as failed
       await PaymentRepository.updatePaymentStatus(payment.id, "FAILED", {
-        failureReason: verifyResult.error || "Signature verification failed",
+        failureReason: verifyResult.error,
       });
 
       logger.warn("Payment verification failed", {
@@ -123,22 +126,29 @@ export class PaymentService {
       );
 
     if (!subscriptionResult.success) {
-      throw new ApiError(500, "Failed to activate subscription");
+      throw new ApiError(
+        subscriptionResult.statusCode,
+        subscriptionResult.message
+      );
     }
 
-    // Update payment as completed
-    await PaymentRepository.updatePaymentStatus(payment.id, "COMPLETED", {
-      paidAt: new Date(),
-      subscriptionId: subscriptionResult.data.id,
-    });
+    // Update payment as completed with subscription link
+    const updateResult = await PaymentRepository.updateByProviderOrderId(
+      razorpayOrderId,
+      {
+        status: "COMPLETED",
+        providerPaymentId: razorpayPaymentId,
+        paidAt: new Date(),
+        subscriptionId: subscriptionResult.data.id,
+      }
+    );
 
-    // Update providerPaymentId with actual payment ID
-    await PaymentRepository.updateByProviderOrderId(razorpayOrderId, {
-      status: "COMPLETED",
-      providerPaymentId: razorpayPaymentId,
-      paidAt: new Date(),
-      subscriptionId: subscriptionResult.data.id,
-    });
+    if (!updateResult.success) {
+      logger.error("Failed to update payment status after verification", {
+        orderId: razorpayOrderId,
+        error: updateResult.message,
+      });
+    }
 
     logger.info("Payment verified and subscription activated", {
       userId,
@@ -147,7 +157,6 @@ export class PaymentService {
     });
 
     return {
-      success: true,
       subscription: {
         id: subscriptionResult.data.id,
         plan: subscriptionResult.data.plan,

@@ -103,20 +103,4 @@ export class AuthService {
 
     return responseData;
   }
-
-  static async logout(id: string) {
-    const user = await UserRepository.findUserById(id);
-    if (!user) {
-      throw new ApiError(404, "User not found");
-    }
-
-    const responseData = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      fullName: user.fullName,
-    };
-
-    return responseData;
-  }
 }

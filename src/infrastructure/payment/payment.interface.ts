@@ -9,4 +9,5 @@ export type {
   WebhookResult,
   Currency,
   PlanPricing,
+  ProviderOrderData,
 } from "../../types/payment.types";

@@ -1,14 +1,8 @@
 import type { Response } from "express";
+import type { PaginationMeta } from "./repository.utils";
 
-// Pagination meta type
-export interface PaginationMeta {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
+// Re-export for convenience
+export type { PaginationMeta };
 
 export interface ApiResponse<T> {
   statusCode: number;

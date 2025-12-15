@@ -1,11 +1,8 @@
-import { Transaction } from "../../generated/prisma/client";
+import type { Transaction } from "../../generated/prisma/client";
+import type { CategorySelect } from "../../types/common.types";
 
-export type CategorySelect = {
-  id: string;
-  name: string;
-  slug: string;
-  color: string | null;
-};
+// Re-export for convenience
+export type { CategorySelect };
 
 export type TransactionWithCategory = Transaction & {
   category: CategorySelect | null;

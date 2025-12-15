@@ -1,7 +1,4 @@
-import type {
-  PaymentProvider,
-  SubscriptionPlan,
-} from "../generated/prisma/client";
+import type { SubscriptionPlan } from "../generated/prisma/client";
 
 // ==================== COMMON TYPES ====================
 
@@ -13,27 +10,43 @@ export interface PlanPricing {
   durationDays: number;
 }
 
-// ==================== ORDER/PAYMENT TYPES ====================
+// ==================== PROVIDER RESULT TYPES (discriminated union) ====================
 
-export interface CreateOrderInput {
-  plan: SubscriptionPlan;
-  userId: string;
-  currency: Currency;
-}
-
-export interface CreateOrderResult {
-  success: true;
-  orderId: string; // Razorpay order_id
-  amount: number;
-  currency: Currency;
-  provider: PaymentProvider;
-  // Provider-specific data for frontend
+export interface ProviderOrderData {
+  orderId: string;
   providerData: {
-    keyId: string; // Razorpay key_id for checkout
+    keyId: string;
     orderId: string;
     amount: number;
     currency: string;
   };
+}
+
+export type CreateOrderResult =
+  | { success: true; data: ProviderOrderData }
+  | { success: false; error: string };
+
+export type VerifyPaymentResult =
+  | { success: true }
+  | { success: false; error: string };
+
+export type WebhookResult =
+  | {
+      success: true;
+      event: string;
+      paymentId?: string;
+      status?: "completed" | "failed" | "refunded";
+    }
+  | { success: false; event: string; error: string };
+
+// ==================== INPUT TYPES ====================
+
+export interface CreateOrderInput {
+  amount: number;
+  currency: Currency;
+  userId: string;
+  plan: SubscriptionPlan;
+  metadata?: Record<string, string>;
 }
 
 export interface VerifyPaymentInput {
@@ -42,54 +55,15 @@ export interface VerifyPaymentInput {
   razorpaySignature: string;
 }
 
-export interface VerifyPaymentResult {
-  success: boolean;
-  paymentId: string;
-  orderId: string;
-  provider: PaymentProvider;
-  error?: string;
-}
-
-// ==================== WEBHOOK TYPES ====================
-
 export interface WebhookPayload {
   rawBody: string | Buffer;
   signature: string;
 }
 
-export interface WebhookResult {
-  success: boolean;
-  event: string;
-  paymentId?: string;
-  orderId?: string;
-  status?: "completed" | "failed" | "refunded";
-  error?: string;
-}
-
 // ==================== PROVIDER INTERFACE ====================
-// This is the contract that both Razorpay and Stripe (future) providers must follow
 
 export interface IPaymentProvider {
-  readonly provider: PaymentProvider;
-
-  /**
-   * Create an order/payment intent
-   */
-  createOrder(input: {
-    amount: number;
-    currency: Currency;
-    userId: string;
-    plan: SubscriptionPlan;
-    metadata?: Record<string, string>;
-  }): Promise<CreateOrderResult>;
-
-  /**
-   * Verify payment signature
-   */
+  createOrder(input: CreateOrderInput): Promise<CreateOrderResult>;
   verifyPayment(input: VerifyPaymentInput): Promise<VerifyPaymentResult>;
-
-  /**
-   * Process webhook events
-   */
   handleWebhook(payload: WebhookPayload): Promise<WebhookResult>;
 }

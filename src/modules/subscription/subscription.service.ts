@@ -18,29 +18,32 @@ export class SubscriptionService {
       subscription.status === "ACTIVE" && subscription.expiresAt < new Date();
 
     if (isExpired) {
-      // Mark as expired
-      await SubscriptionRepository.updateSubscription(userId, {
+      const result = await SubscriptionRepository.updateSubscription(userId, {
         status: "EXPIRED",
       });
-      subscription.status = "EXPIRED";
+
+      if (result.success) {
+        subscription.status = "EXPIRED";
+      }
     }
+
+    const isActive = subscription.status === "ACTIVE";
 
     return {
       id: subscription.id,
       plan: subscription.plan,
       status: subscription.status,
       expiresAt: subscription.expiresAt,
-      isActive: subscription.status === "ACTIVE",
-      daysRemaining:
-        subscription.status === "ACTIVE"
-          ? Math.max(
-              0,
-              Math.ceil(
-                (subscription.expiresAt.getTime() - Date.now()) /
-                  (1000 * 60 * 60 * 24)
-              )
+      isActive,
+      daysRemaining: isActive
+        ? Math.max(
+            0,
+            Math.ceil(
+              (subscription.expiresAt.getTime() - Date.now()) /
+                (1000 * 60 * 60 * 24)
             )
-          : 0,
+          )
+        : 0,
       createdAt: subscription.createdAt,
       updatedAt: subscription.updatedAt,
     };
@@ -87,7 +90,7 @@ export class SubscriptionService {
     const subscription = await SubscriptionRepository.findByUserId(userId);
 
     if (!subscription) {
-      throw new ApiError(404, "No active subscription found");
+      throw new ApiError(404, "No subscription found");
     }
 
     if (subscription.status !== "ACTIVE") {
@@ -103,8 +106,8 @@ export class SubscriptionService {
     logger.info("Subscription cancelled", { userId });
 
     return {
-      message: "Subscription cancelled successfully",
-      expiresAt: result.data.expiresAt, // User can still use until expiry
+      message: "Subscription cancelled. Access continues until expiry date.",
+      expiresAt: result.data.expiresAt,
     };
   }
 

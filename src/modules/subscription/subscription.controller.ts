@@ -2,7 +2,6 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import type { Request, Response } from "express";
 import { SubscriptionService } from "./subscription.service";
 import { sendApiResponse } from "../../utils/apiResponse";
-import logger from "../../config/logger";
 
 export const SubscriptionController = {
   /**
@@ -48,8 +47,6 @@ export const SubscriptionController = {
     const userId = req.userId as string;
 
     const result = await SubscriptionService.cancelSubscription(userId);
-
-    logger.info("Subscription cancelled", { userId });
 
     return sendApiResponse(res, 200, result.message, {
       expiresAt: result.expiresAt,

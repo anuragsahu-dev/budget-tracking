@@ -9,6 +9,7 @@ export { RazorpayProvider } from "./providers/razorpay.provider";
 // Types
 export type {
   IPaymentProvider,
+  CreateOrderInput,
   CreateOrderResult,
   VerifyPaymentInput,
   VerifyPaymentResult,
