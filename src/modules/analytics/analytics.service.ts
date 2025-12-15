@@ -7,13 +7,24 @@ import type {
   TrendsQuery,
 } from "./analytics.validation";
 import prisma from "../../config/prisma";
+import { SubscriptionStatus } from "../../generated/prisma/client";
 
+// Check if user has PRO access (ACTIVE or CANCELLED but not expired)
 async function hasActiveSubscription(userId: string): Promise<boolean> {
   const sub = await prisma.subscription.findUnique({
     where: { userId },
     select: { status: true, expiresAt: true },
   });
-  return sub?.status === "ACTIVE" && sub.expiresAt > new Date();
+
+  if (!sub) return false;
+
+  const notExpired = sub.expiresAt > new Date();
+  // ACTIVE or CANCELLED subscriptions have access until expiry
+  return (
+    (sub.status === SubscriptionStatus.ACTIVE ||
+      sub.status === SubscriptionStatus.CANCELLED) &&
+    notExpired
+  );
 }
 
 function getCurrentPeriod() {

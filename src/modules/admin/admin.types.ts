@@ -1,4 +1,10 @@
-import { UserRole, UserStatus } from "../../generated/prisma/client";
+import {
+  UserRole,
+  UserStatus,
+  PaymentStatus,
+  SubscriptionPlan,
+  Payment,
+} from "../../generated/prisma/client";
 
 export type SafeUser = {
   id: string;
@@ -25,3 +31,21 @@ export interface PaginationOptions {
   sortBy: string;
   sortOrder: "asc" | "desc";
 }
+
+// ========== PAYMENT TYPES ==========
+
+export interface PaymentFilters {
+  userId?: string;
+  status?: PaymentStatus;
+  plan?: SubscriptionPlan;
+  from?: Date;
+  to?: Date;
+}
+
+export type PaymentWithUser = Payment & {
+  user: {
+    id: string;
+    email: string;
+    fullName: string | null;
+  };
+};

@@ -89,12 +89,12 @@ export class SubscriptionRepository {
         create: {
           userId,
           plan,
-          status: "ACTIVE",
+          status: SubscriptionStatus.ACTIVE,
           expiresAt,
         },
         update: {
           plan,
-          status: "ACTIVE",
+          status: SubscriptionStatus.ACTIVE,
           expiresAt,
         },
       });
@@ -111,11 +111,11 @@ export class SubscriptionRepository {
   static async markExpiredSubscriptions(): Promise<number> {
     const result = await prisma.subscription.updateMany({
       where: {
-        status: "ACTIVE",
+        status: SubscriptionStatus.ACTIVE,
         expiresAt: { lt: new Date() },
       },
       data: {
-        status: "EXPIRED",
+        status: SubscriptionStatus.EXPIRED,
       },
     });
     return result.count;
@@ -130,7 +130,7 @@ export class SubscriptionRepository {
     try {
       const subscription = await prisma.subscription.update({
         where: { userId },
-        data: { status: "CANCELLED" },
+        data: { status: SubscriptionStatus.CANCELLED },
       });
       return { success: true, data: subscription };
     } catch (error) {

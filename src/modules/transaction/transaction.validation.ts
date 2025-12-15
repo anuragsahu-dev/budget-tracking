@@ -1,7 +1,13 @@
 import { z } from "zod";
 import { ulidSchema } from "../../validations/common.schema";
+import { TransactionType } from "../../generated/prisma/client";
 
-const transactionTypeSchema = z.enum(["INCOME", "EXPENSE"]);
+// Extract enum values for Zod compatibility
+const transactionTypeValues = Object.values(TransactionType) as [
+  TransactionType,
+  ...TransactionType[]
+];
+const transactionTypeSchema = z.enum(transactionTypeValues);
 
 const amountSchema = z
   .number()

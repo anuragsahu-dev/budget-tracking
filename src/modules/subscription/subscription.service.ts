@@ -1,5 +1,6 @@
 import { SubscriptionRepository } from "./subscription.repository";
 import { ApiError } from "../../middlewares/error.middleware";
+import { SubscriptionStatus } from "../../generated/prisma/client";
 import logger from "../../config/logger";
 
 export class SubscriptionService {
@@ -13,29 +14,38 @@ export class SubscriptionService {
       return null;
     }
 
-    // Check if subscription has expired
-    const isExpired =
-      subscription.status === "ACTIVE" && subscription.expiresAt < new Date();
+    const now = new Date();
 
-    if (isExpired) {
+    // Check if subscription has expired (applies to both ACTIVE and CANCELLED)
+    const isExpired =
+      (subscription.status === SubscriptionStatus.ACTIVE ||
+        subscription.status === SubscriptionStatus.CANCELLED) &&
+      subscription.expiresAt < now;
+
+    if (isExpired && subscription.status !== SubscriptionStatus.EXPIRED) {
       const result = await SubscriptionRepository.updateSubscription(userId, {
-        status: "EXPIRED",
+        status: SubscriptionStatus.EXPIRED,
       });
 
       if (result.success) {
-        subscription.status = "EXPIRED";
+        subscription.status = SubscriptionStatus.EXPIRED;
       }
     }
 
-    const isActive = subscription.status === "ACTIVE";
+    // User has access if: ACTIVE, or CANCELLED but not yet expired
+    const hasAccess = this.checkHasAccess(
+      subscription.status,
+      subscription.expiresAt
+    );
 
     return {
       id: subscription.id,
       plan: subscription.plan,
       status: subscription.status,
       expiresAt: subscription.expiresAt,
-      isActive,
-      daysRemaining: isActive
+      hasAccess,
+      // CANCELLED subscriptions still show days remaining until they expire
+      daysRemaining: hasAccess
         ? Math.max(
             0,
             Math.ceil(
@@ -44,6 +54,7 @@ export class SubscriptionService {
             )
           )
         : 0,
+      isCancelled: subscription.status === SubscriptionStatus.CANCELLED,
       createdAt: subscription.createdAt,
       updatedAt: subscription.updatedAt,
     };
@@ -62,13 +73,19 @@ export class SubscriptionService {
       };
     }
 
+    const hasAccess = this.checkHasAccess(
+      subscription.status,
+      subscription.expiresAt
+    );
+
     return {
       subscription: {
         id: subscription.id,
         plan: subscription.plan,
         status: subscription.status,
         expiresAt: subscription.expiresAt,
-        isActive: subscription.status === "ACTIVE",
+        hasAccess,
+        isCancelled: subscription.status === SubscriptionStatus.CANCELLED,
         createdAt: subscription.createdAt,
       },
       payments: subscription.payments.map((payment) => ({
@@ -85,6 +102,7 @@ export class SubscriptionService {
 
   /**
    * Cancel subscription
+   * User retains access until expiresAt date
    */
   static async cancelSubscription(userId: string) {
     const subscription = await SubscriptionRepository.findByUserId(userId);
@@ -93,7 +111,8 @@ export class SubscriptionService {
       throw new ApiError(404, "No subscription found");
     }
 
-    if (subscription.status !== "ACTIVE") {
+    // Can only cancel ACTIVE subscriptions
+    if (subscription.status !== SubscriptionStatus.ACTIVE) {
       throw new ApiError(400, "Subscription is not active");
     }
 
@@ -103,16 +122,26 @@ export class SubscriptionService {
       throw new ApiError(result.statusCode, result.message);
     }
 
-    logger.info("Subscription cancelled", { userId });
+    const daysRemaining = Math.ceil(
+      (result.data.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
+
+    logger.info("Subscription cancelled", {
+      userId,
+      expiresAt: result.data.expiresAt,
+      daysRemaining,
+    });
 
     return {
-      message: "Subscription cancelled. Access continues until expiry date.",
+      message: `Subscription cancelled. You will have access for ${daysRemaining} more days until ${result.data.expiresAt.toDateString()}.`,
       expiresAt: result.data.expiresAt,
+      daysRemaining,
     };
   }
 
   /**
-   * Check if user has active subscription
+   * Check if user has active subscription (PRO access)
+   * ACTIVE or CANCELLED subscriptions are valid until expiresAt
    */
   static async hasActiveSubscription(userId: string): Promise<boolean> {
     const subscription = await SubscriptionRepository.findByUserId(userId);
@@ -121,8 +150,27 @@ export class SubscriptionService {
       return false;
     }
 
+    return this.checkHasAccess(subscription.status, subscription.expiresAt);
+  }
+
+  /**
+   * Helper: Check if subscription grants access
+   * - ACTIVE: always has access if not expired
+   * - CANCELLED: still has access until expiresAt
+   * - EXPIRED/PENDING: no access
+   */
+  private static checkHasAccess(
+    status: SubscriptionStatus,
+    expiresAt: Date
+  ): boolean {
+    const now = new Date();
+    const notExpired = expiresAt > now;
+
+    // ACTIVE or CANCELLED subscriptions have access until expiry
     return (
-      subscription.status === "ACTIVE" && subscription.expiresAt > new Date()
+      (status === SubscriptionStatus.ACTIVE ||
+        status === SubscriptionStatus.CANCELLED) &&
+      notExpired
     );
   }
 }

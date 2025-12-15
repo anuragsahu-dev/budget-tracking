@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TransactionType } from "../../generated/prisma/client";
 
 const monthSchema = z.coerce
   .number()
@@ -11,6 +12,12 @@ const yearSchema = z.coerce
   .int()
   .min(2000, "Year must be 2000 or later")
   .max(2100, "Year must be 2100 or earlier");
+
+// Extract enum values for Zod compatibility
+const transactionTypeValues = Object.values(TransactionType) as [
+  TransactionType,
+  ...TransactionType[]
+];
 
 // ========== MONTHLY SUMMARY (FREE + PRO) ==========
 // FREE: Current month only
@@ -35,7 +42,7 @@ export type YearlySummaryQuery = z.infer<typeof yearlySummaryQuerySchema>;
 export const categorySummaryQuerySchema = z.object({
   month: monthSchema.optional(),
   year: yearSchema.optional(),
-  type: z.enum(["INCOME", "EXPENSE"]).optional(), // Filter by transaction type
+  type: z.enum(transactionTypeValues).optional(), // Filter by transaction type
 });
 
 export type CategorySummaryQuery = z.infer<typeof categorySummaryQuerySchema>;

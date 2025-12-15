@@ -5,9 +5,15 @@ import { SubscriptionPlan } from "../../generated/prisma/client";
 export const currencySchema = z.enum(["INR", "USD"]);
 export type CurrencyInput = z.infer<typeof currencySchema>;
 
+// Subscription plan values - typed for Zod v4 compatibility
+const subscriptionPlanValues = Object.values(SubscriptionPlan) as [
+  SubscriptionPlan,
+  ...SubscriptionPlan[]
+];
+
 // Create order (initiate payment)
 export const createOrderSchema = z.object({
-  plan: z.nativeEnum(SubscriptionPlan),
+  plan: z.enum(subscriptionPlanValues),
   currency: currencySchema.default("INR"),
 });
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

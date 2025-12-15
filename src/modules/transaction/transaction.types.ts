@@ -1,4 +1,7 @@
-import type { Transaction } from "../../generated/prisma/client";
+import type {
+  Transaction,
+  TransactionType,
+} from "../../generated/prisma/client";
 import type { CategorySelect } from "../../types/common.types";
 
 // Re-export for convenience
@@ -10,7 +13,7 @@ export type TransactionWithCategory = Transaction & {
 
 export interface TransactionFilters {
   userId: string;
-  type?: "INCOME" | "EXPENSE";
+  type?: TransactionType;
   categoryId?: string;
   from?: Date;
   to?: Date;

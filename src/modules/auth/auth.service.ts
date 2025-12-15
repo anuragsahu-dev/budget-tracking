@@ -3,6 +3,7 @@ import { ApiError } from "../../middlewares/error.middleware";
 import type { EmailInput, VerifyInput, FullNameInput } from "./auth.validation";
 import { UserRepository } from "../user/user.repository";
 import { queueOtpEmail } from "../../jobs";
+import { UserRole } from "../../generated/prisma/client";
 
 export class AuthService {
   static async start(data: EmailInput) {
@@ -11,7 +12,7 @@ export class AuthService {
     if (!user) {
       const result = await UserRepository.createUser({
         email: data.email,
-        role: "USER",
+        role: UserRole.USER,
       });
 
       if (!result.success) {

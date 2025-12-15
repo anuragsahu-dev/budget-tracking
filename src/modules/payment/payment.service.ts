@@ -9,6 +9,7 @@ import type {
   VerifyPaymentInput,
 } from "./payment.validation";
 import logger from "../../config/logger";
+import { PaymentProvider, PaymentStatus } from "../../generated/prisma/client";
 
 export class PaymentService {
   /**
@@ -34,17 +35,16 @@ export class PaymentService {
     if (!orderResult.success) {
       throw new ApiError(500, orderResult.error);
     }
-                    
-    // Create pending payment record
+
+    // Create pending payment record (providerPaymentId is null until verified)
     const paymentResult = await PaymentRepository.createPayment({
       userId,
       plan,
-      provider: "RAZORPAY",
+      provider: PaymentProvider.RAZORPAY,
       amount: pricing.amount / 100, // Convert paise to rupees for storage
       currency,
-      providerPaymentId: `pending_${orderResult.data.orderId}`,
       providerOrderId: orderResult.data.orderId,
-      status: "PENDING",
+      status: PaymentStatus.PENDING,
     });
 
     if (!paymentResult.success) {
@@ -85,7 +85,7 @@ export class PaymentService {
       throw new ApiError(403, "Payment does not belong to this user");
     }
 
-    if (payment.status !== "PENDING") {
+    if (payment.status !== PaymentStatus.PENDING) {
       throw new ApiError(400, "Payment already processed");
     }
 
@@ -99,7 +99,7 @@ export class PaymentService {
 
     if (!verifyResult.success) {
       // Update payment as failed
-      await PaymentRepository.updatePaymentStatus(payment.id, "FAILED", {
+      await PaymentRepository.updatePaymentStatus(payment.id, PaymentStatus.FAILED, {
         failureReason: verifyResult.error,
       });
 
@@ -136,7 +136,7 @@ export class PaymentService {
     const updateResult = await PaymentRepository.updateByProviderOrderId(
       razorpayOrderId,
       {
-        status: "COMPLETED",
+        status: PaymentStatus.COMPLETED,
         providerPaymentId: razorpayPaymentId,
         paidAt: new Date(),
         subscriptionId: subscriptionResult.data.id,

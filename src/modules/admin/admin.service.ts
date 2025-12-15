@@ -1,4 +1,5 @@
 import { AdminRepository } from "./admin.repository";
+import { PlanPricingRepository } from "./planPricing.repository";
 import { ApiError } from "../../middlewares/error.middleware";
 import type {
   CreateSystemCategoryInput,
@@ -6,6 +7,9 @@ import type {
   ListUsersQuery,
   UpdateUserStatusInput,
   StatsQuery,
+  ListPaymentsQuery,
+  CreatePlanPricingInput,
+  UpdatePlanPricingInput,
 } from "./admin.validation";
 import logger from "../../config/logger";
 import { generateSlug } from "../../utils/slug";
@@ -257,5 +261,137 @@ export class AdminService {
     logger.info("Admin stats retrieved", { from, to });
 
     return stats;
+  }
+
+  // ========== PAYMENT MANAGEMENT SERVICE ==========
+
+  /**
+   * Get all payments with filters and pagination
+   */
+  static async getAllPayments(query: ListPaymentsQuery) {
+    const { userId, status, plan, from, to, page, limit, sortBy, sortOrder } =
+      query;
+
+    const result = await AdminRepository.findAllPayments(
+      { userId, status, plan, from, to },
+      { page, limit, sortBy, sortOrder }
+    );
+
+    return {
+      payments: result.data,
+      meta: result.meta,
+    };
+  }
+
+  /**
+   * Get payment by ID
+   */
+  static async getPaymentById(paymentId: string) {
+    const payment = await AdminRepository.findPaymentById(paymentId);
+
+    if (!payment) {
+      throw new ApiError(404, "Payment not found");
+    }
+
+    return payment;
+  }
+
+  /**
+   * Get payment statistics
+   */
+  static async getPaymentStats(query: StatsQuery) {
+    const { from, to } = query;
+
+    const stats = await AdminRepository.getPaymentStats(from, to);
+
+    logger.info("Payment stats retrieved", { from, to });
+
+    return stats;
+  }
+
+  // ========== PLAN PRICING SERVICE ==========
+
+  /**
+   * Get all plan pricing (including inactive)
+   */
+  static async getAllPlanPricing() {
+    const pricing = await PlanPricingRepository.findAll();
+    return pricing;
+  }
+
+  /**
+   * Get active plan pricing only
+   */
+  static async getActivePlanPricing() {
+    const pricing = await PlanPricingRepository.findAllActive();
+    return pricing;
+  }
+
+  /**
+   * Create plan pricing
+   */
+  static async createPlanPricing(data: CreatePlanPricingInput) {
+    const result = await PlanPricingRepository.create(data);
+
+    if (!result.success) {
+      throw new ApiError(result.statusCode, result.message);
+    }
+
+    logger.info("Plan pricing created", {
+      pricingId: result.data.id,
+      plan: result.data.plan,
+      currency: result.data.currency,
+    });
+
+    return result.data;
+  }
+
+  /**
+   * Update plan pricing
+   */
+  static async updatePlanPricing(
+    pricingId: string,
+    data: UpdatePlanPricingInput
+  ) {
+    const pricing = await PlanPricingRepository.findById(pricingId);
+
+    if (!pricing) {
+      throw new ApiError(404, "Plan pricing not found");
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new ApiError(400, "No valid fields to update");
+    }
+
+    const result = await PlanPricingRepository.update(pricingId, data);
+
+    if (!result.success) {
+      throw new ApiError(result.statusCode, result.message);
+    }
+
+    logger.info("Plan pricing updated", { pricingId });
+
+    return result.data;
+  }
+
+  /**
+   * Delete plan pricing
+   */
+  static async deletePlanPricing(pricingId: string) {
+    const pricing = await PlanPricingRepository.findById(pricingId);
+
+    if (!pricing) {
+      throw new ApiError(404, "Plan pricing not found");
+    }
+
+    const result = await PlanPricingRepository.delete(pricingId);
+
+    if (!result.success) {
+      throw new ApiError(result.statusCode, result.message);
+    }
+
+    logger.info("Plan pricing deleted", { pricingId });
+
+    return { message: "Plan pricing deleted successfully" };
   }
 }

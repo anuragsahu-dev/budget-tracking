@@ -4,6 +4,8 @@ import {
   Category,
   UserRole,
   UserStatus,
+  Payment,
+  PaymentStatus,
 } from "../../generated/prisma/client";
 import {
   PRISMA_ERROR,
@@ -17,7 +19,12 @@ import {
   unknownError,
 } from "../../utils/repository.utils";
 import { CategoryRepository } from "../category/category.repository";
-import type { SafeUser, UserFilters, PaginationOptions } from "./admin.types";
+import type {
+  SafeUser,
+  UserFilters,
+  PaginationOptions,
+  PaymentFilters,
+} from "./admin.types";
 
 // Re-export types for consumers
 export type { SafeUser, UserFilters, PaginationOptions };
@@ -203,7 +210,7 @@ export class AdminRepository {
     const [totalUsers, activeUsers, newUsers, totalTransactions, totalBudgets] =
       await Promise.all([
         prisma.user.count(),
-        prisma.user.count({ where: { status: "ACTIVE" } }),
+        prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
         prisma.user.count({ where: dateFilter }),
         prisma.transaction.count({ where: dateFilter }),
         prisma.budget.count({ where: dateFilter }),
@@ -215,6 +222,111 @@ export class AdminRepository {
       newUsers,
       totalTransactions,
       totalBudgets,
+    };
+  }
+
+  // ========== PAYMENT MANAGEMENT METHODS ==========
+
+  /**
+   * Find all payments with filters and pagination
+   */
+  static async findAllPayments(
+    filters: PaymentFilters,
+    pagination: PaginationOptions
+  ): Promise<PaginatedResult<Payment>> {
+    const { userId, status, plan, from, to } = filters;
+    const { page, limit, sortBy, sortOrder } = pagination;
+
+    const whereClause: Prisma.PaymentWhereInput = {
+      ...(userId && { userId }),
+      ...(status && { status }),
+      ...(plan && { plan }),
+      ...(from || to
+        ? { createdAt: { ...(from && { gte: from }), ...(to && { lte: to }) } }
+        : {}),
+    };
+
+    const skip = (page - 1) * limit;
+
+    const [payments, total] = await Promise.all([
+      prisma.payment.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: { id: true, email: true, fullName: true },
+          },
+        },
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      prisma.payment.count({ where: whereClause }),
+    ]);
+
+    return {
+      data: payments,
+      meta: createPaginationMeta(total, page, limit),
+    };
+  }
+
+  /**
+   * Find payment by ID with user details
+   */
+  static async findPaymentById(id: string) {
+    return prisma.payment.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: { id: true, email: true, fullName: true },
+        },
+        subscription: true,
+      },
+    });
+  }
+
+  /**
+   * Get payment statistics
+   */
+  static async getPaymentStats(from?: Date, to?: Date) {
+    const dateFilter =
+      from || to
+        ? { createdAt: { ...(from && { gte: from }), ...(to && { lte: to }) } }
+        : {};
+
+    const [
+      totalPayments,
+      completedPayments,
+      pendingPayments,
+      failedPayments,
+      refundedPayments,
+      totalRevenue,
+    ] = await Promise.all([
+      prisma.payment.count({ where: dateFilter }),
+      prisma.payment.count({
+        where: { ...dateFilter, status: PaymentStatus.COMPLETED },
+      }),
+      prisma.payment.count({
+        where: { ...dateFilter, status: PaymentStatus.PENDING },
+      }),
+      prisma.payment.count({
+        where: { ...dateFilter, status: PaymentStatus.FAILED },
+      }),
+      prisma.payment.count({
+        where: { ...dateFilter, status: PaymentStatus.REFUNDED },
+      }),
+      prisma.payment.aggregate({
+        where: { ...dateFilter, status: PaymentStatus.COMPLETED },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return {
+      totalPayments,
+      completedPayments,
+      pendingPayments,
+      failedPayments,
+      refundedPayments,
+      totalRevenue: Number(totalRevenue._sum.amount ?? 0),
     };
   }
 }

@@ -1,5 +1,21 @@
 import { z } from "zod";
 import { ulidSchema } from "../../validations/common.schema";
+import {
+  UserRole,
+  UserStatus,
+  PaymentStatus,
+  SubscriptionPlan,
+} from "../../generated/prisma/client";
+
+// Extract enum values for Zod compatibility
+const paymentStatusValues = Object.values(PaymentStatus) as [
+  PaymentStatus,
+  ...PaymentStatus[]
+];
+const subscriptionPlanValues = Object.values(SubscriptionPlan) as [
+  SubscriptionPlan,
+  ...SubscriptionPlan[]
+];
 
 // ========== SYSTEM CATEGORY SCHEMAS ==========
 
@@ -44,6 +60,13 @@ export type SystemCategoryIdParam = z.infer<typeof systemCategoryIdParamSchema>;
 
 // ========== USER MANAGEMENT SCHEMAS ==========
 
+// Extract enum values for Zod compatibility
+const userRoleValues = Object.values(UserRole) as [UserRole, ...UserRole[]];
+const userStatusValues = Object.values(UserStatus) as [
+  UserStatus,
+  ...UserStatus[]
+];
+
 export const userIdParamSchema = z.object({
   id: ulidSchema,
 });
@@ -51,14 +74,14 @@ export const userIdParamSchema = z.object({
 export type UserIdParam = z.infer<typeof userIdParamSchema>;
 
 export const updateUserStatusSchema = z.object({
-  status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED", "DELETED"]),
+  status: z.enum(userStatusValues),
 });
 
 export type UpdateUserStatusInput = z.infer<typeof updateUserStatusSchema>;
 
 export const listUsersQuerySchema = z.object({
-  role: z.enum(["USER", "ADMIN"]).optional(),
-  status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED", "DELETED"]).optional(),
+  role: z.enum(userRoleValues).optional(),
+  status: z.enum(userStatusValues).optional(),
   search: z.string().trim().max(100).optional(),
   page: z.coerce
     .number()
@@ -85,3 +108,75 @@ export const statsQuerySchema = z.object({
 });
 
 export type StatsQuery = z.infer<typeof statsQuerySchema>;
+
+// ========== PAYMENT MANAGEMENT SCHEMAS ==========
+
+export const listPaymentsQuerySchema = z.object({
+  userId: z.string().optional(),
+  status: z.enum(paymentStatusValues).optional(),
+  plan: z.enum(subscriptionPlanValues).optional(),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  page: z.coerce
+    .number()
+    .int()
+    .positive("Page must be a positive integer")
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .positive("Limit must be a positive integer")
+    .max(100, "Limit cannot exceed 100")
+    .default(20),
+  sortBy: z.enum(["createdAt", "amount", "status"]).default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export type ListPaymentsQuery = z.infer<typeof listPaymentsQuerySchema>;
+
+export const paymentIdParamSchema = z.object({
+  id: ulidSchema,
+});
+
+export type PaymentIdParam = z.infer<typeof paymentIdParamSchema>;
+
+// ========== PLAN PRICING SCHEMAS ==========
+
+const currencySchema = z
+  .string()
+  .length(3, "Currency must be 3 characters (e.g., INR, USD)");
+
+export const createPlanPricingSchema = z.object({
+  plan: z.enum(subscriptionPlanValues),
+  currency: currencySchema,
+  amount: z
+    .number()
+    .int()
+    .positive("Amount must be positive (in smallest unit)"),
+  durationDays: z.number().int().positive("Duration must be positive"),
+  name: z.string().min(2).max(100),
+  description: z.string().max(500).optional().nullable(),
+  isActive: z.boolean().default(true),
+});
+
+export type CreatePlanPricingInput = z.infer<typeof createPlanPricingSchema>;
+
+export const updatePlanPricingSchema = z.object({
+  amount: z.number().int().positive("Amount must be positive").optional(),
+  durationDays: z
+    .number()
+    .int()
+    .positive("Duration must be positive")
+    .optional(),
+  name: z.string().min(2).max(100).optional(),
+  description: z.string().max(500).optional().nullable(),
+  isActive: z.boolean().optional(),
+});
+
+export type UpdatePlanPricingInput = z.infer<typeof updatePlanPricingSchema>;
+
+export const planPricingIdParamSchema = z.object({
+  id: ulidSchema,
+});
+
+export type PlanPricingIdParam = z.infer<typeof planPricingIdParamSchema>;

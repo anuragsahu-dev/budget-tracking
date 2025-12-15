@@ -10,6 +10,7 @@ import type {
 } from "./transaction.validation";
 import logger from "../../config/logger";
 import prisma from "../../config/prisma";
+import { TransactionType } from "../../generated/prisma/client";
 
 function formatTransaction(t: TransactionWithCategory) {
   return {
@@ -107,7 +108,7 @@ export class TransactionService {
 
     type UpdateData = {
       amount?: number;
-      type?: "INCOME" | "EXPENSE";
+      type?: TransactionType;
       description?: string | null;
       date?: Date;
       category?: { connect: { id: string } } | { disconnect: true };

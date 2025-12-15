@@ -1,5 +1,9 @@
 import prisma from "../../config/prisma";
-import { Prisma, Transaction } from "../../generated/prisma/client";
+import {
+  Prisma,
+  Transaction,
+  TransactionType,
+} from "../../generated/prisma/client";
 import {
   PRISMA_ERROR,
   isPrismaError,
@@ -169,11 +173,11 @@ export class TransactionRepository {
 
     const [incomeResult, expenseResult] = await Promise.all([
       prisma.transaction.aggregate({
-        where: { ...whereClause, type: "INCOME" },
+        where: { ...whereClause, type: TransactionType.INCOME },
         _sum: { amount: true },
       }),
       prisma.transaction.aggregate({
-        where: { ...whereClause, type: "EXPENSE" },
+        where: { ...whereClause, type: TransactionType.EXPENSE },
         _sum: { amount: true },
       }),
     ]);
