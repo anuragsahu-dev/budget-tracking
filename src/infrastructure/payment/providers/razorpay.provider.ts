@@ -69,7 +69,7 @@ export class RazorpayProvider implements IPaymentProvider {
 
     if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
       return { success: false, error: "Missing required payment fields" };
-    } 
+    }
 
     try {
       const body = `${razorpayOrderId}|${razorpayPaymentId}`;
@@ -143,6 +143,7 @@ export class RazorpayProvider implements IPaymentProvider {
             success: true,
             event: "payment.captured",
             paymentId: event.payload.payment.entity.id,
+            orderId: event.payload.payment.entity.order_id,
             status: "completed",
           };
 
@@ -151,6 +152,7 @@ export class RazorpayProvider implements IPaymentProvider {
             success: true,
             event: "payment.failed",
             paymentId: event.payload.payment.entity.id,
+            orderId: event.payload.payment.entity.order_id,
             status: "failed",
           };
 

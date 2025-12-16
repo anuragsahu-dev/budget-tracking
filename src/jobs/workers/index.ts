@@ -1,5 +1,7 @@
 import logger from "../../config/logger";
 import { emailWorker } from "./email.worker";
+import { schedulerWorker } from "./scheduler.worker";
+import { setupScheduledJobs } from "../queues/scheduler.queue";
 
 /**
  * Initialize all workers
@@ -8,11 +10,14 @@ import { emailWorker } from "./email.worker";
 export async function initializeWorkers(): Promise<void> {
   logger.info("Initializing background workers...");
 
-  // Email worker is auto-started when imported
-  // Add more workers here as needed
+  // Setup scheduled jobs (BullMQ repeatable jobs)
+  await setupScheduledJobs();
+
+  // Workers are auto-started when imported
+  // Email worker and Scheduler worker are now running
 
   logger.info("Background workers initialized", {
-    workers: ["email"],
+    workers: ["email", "scheduler"],
   });
 }
 
@@ -23,9 +28,9 @@ export async function initializeWorkers(): Promise<void> {
 export async function shutdownWorkers(): Promise<void> {
   logger.info("Shutting down background workers...");
 
-  await emailWorker.close();
+  await Promise.all([emailWorker.close(), schedulerWorker.close()]);
 
   logger.info("Background workers shut down successfully");
 }
 
-export { emailWorker };
+export { emailWorker, schedulerWorker };

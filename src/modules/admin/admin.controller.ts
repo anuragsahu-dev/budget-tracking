@@ -3,22 +3,27 @@ import type { Request, Response } from "express";
 import { AdminService } from "./admin.service";
 import { sendApiResponse } from "../../utils/apiResponse";
 import {
-  getValidatedBody,  
+  getValidatedBody,
   getValidatedParams,
   getValidatedQuery,
 } from "../../types/express";
 import type {
-  CreateSystemCategoryInput,  
+  CreateSystemCategoryInput,
   UpdateSystemCategoryInput,
   SystemCategoryIdParam,
   UserIdParam,
   UpdateUserStatusInput,
   ListUsersQuery,
   StatsQuery,
+  ListPaymentsQuery,
+  PaymentIdParam,
+  CreatePlanPricingInput,
+  UpdatePlanPricingInput,
+  PlanPricingIdParam,
 } from "./admin.validation";
 
 export const AdminController = {
-
+  // ========== SYSTEM CATEGORY ENDPOINTS ==========
 
   getAllSystemCategories: asyncHandler(async (_req: Request, res: Response) => {
     const categories = await AdminService.getAllSystemCategories();
@@ -108,5 +113,90 @@ export const AdminController = {
     const stats = await AdminService.getStats(query);
 
     return sendApiResponse(res, 200, "Statistics fetched successfully", stats);
+  }),
+
+  // ========== PAYMENT MANAGEMENT ENDPOINTS ==========
+
+  getAllPayments: asyncHandler(async (req: Request, res: Response) => {
+    const query = getValidatedQuery<ListPaymentsQuery>(req);
+
+    const result = await AdminService.getAllPayments(query);
+
+    return sendApiResponse(
+      res,
+      200,
+      "Payments fetched successfully",
+      result.payments,
+      result.meta
+    );
+  }),
+
+  getPaymentById: asyncHandler(async (req: Request, res: Response) => {
+    const { id } = getValidatedParams<PaymentIdParam>(req);
+
+    const payment = await AdminService.getPaymentById(id);
+
+    return sendApiResponse(res, 200, "Payment fetched successfully", payment);
+  }),
+
+  getPaymentStats: asyncHandler(async (req: Request, res: Response) => {
+    const query = getValidatedQuery<StatsQuery>(req);
+
+    const stats = await AdminService.getPaymentStats(query);
+
+    return sendApiResponse(
+      res,
+      200,
+      "Payment statistics fetched successfully",
+      stats
+    );
+  }),
+
+  // ========== PLAN PRICING ENDPOINTS ==========
+
+  getAllPlanPricing: asyncHandler(async (_req: Request, res: Response) => {
+    const pricing = await AdminService.getAllPlanPricing();
+
+    return sendApiResponse(
+      res,
+      200,
+      "Plan pricing fetched successfully",
+      pricing
+    );
+  }),
+
+  createPlanPricing: asyncHandler(async (req: Request, res: Response) => {
+    const data = getValidatedBody<CreatePlanPricingInput>(req);
+
+    const pricing = await AdminService.createPlanPricing(data);
+
+    return sendApiResponse(
+      res,
+      201,
+      "Plan pricing created successfully",
+      pricing
+    );
+  }),
+
+  updatePlanPricing: asyncHandler(async (req: Request, res: Response) => {
+    const { id } = getValidatedParams<PlanPricingIdParam>(req);
+    const data = getValidatedBody<UpdatePlanPricingInput>(req);
+
+    const pricing = await AdminService.updatePlanPricing(id, data);
+
+    return sendApiResponse(
+      res,
+      200,
+      "Plan pricing updated successfully",
+      pricing
+    );
+  }),
+
+  deletePlanPricing: asyncHandler(async (req: Request, res: Response) => {
+    const { id } = getValidatedParams<PlanPricingIdParam>(req);
+
+    const result = await AdminService.deletePlanPricing(id);
+
+    return sendApiResponse(res, 200, result.message, null);
   }),
 };

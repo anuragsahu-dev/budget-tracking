@@ -6,6 +6,9 @@ import { createOrderSchema, verifyPaymentSchema } from "./payment.validation";
 
 const router = Router();
 
+// Get available plans (public - no auth required)
+router.get("/plans", PaymentController.getAvailablePlans);
+
 // Create payment order (requires auth)
 router.post(
   "/create-order",

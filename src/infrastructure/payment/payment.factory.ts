@@ -1,4 +1,4 @@
-import { isRazorpayConfigured } from "../../config/payment.config";
+import { paymentConfig } from "../../config/payment.config";
 import type { IPaymentProvider } from "./payment.interface";
 import { RazorpayProvider } from "./providers/razorpay.provider";
 
@@ -14,7 +14,9 @@ let razorpayInstance: RazorpayProvider | null = null;
  * - USD → Stripe
  */
 export function getPaymentProvider(): IPaymentProvider {
-  if (!isRazorpayConfigured()) {
+  const { keyId, keySecret } = paymentConfig.razorpay;
+
+  if (!keyId || !keySecret) {
     throw new Error(
       "Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in environment variables."
     );

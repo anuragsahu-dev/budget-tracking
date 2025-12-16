@@ -11,7 +11,7 @@ export type {
   PaymentSuccessJobData,
 } from "./types";
 
-// Queues
+// Email Queues
 export {
   emailQueue,
   addEmailJob,
@@ -19,5 +19,17 @@ export {
   queuePaymentSuccessEmail,
 } from "./queues";
 
+// Scheduler Queues
+export {
+  schedulerQueue,
+  setupScheduledJobs,
+  getScheduledJobsStatus,
+} from "./queues";
+
 // Workers
-export { initializeWorkers, shutdownWorkers, emailWorker } from "./workers";
+export {
+  initializeWorkers,
+  shutdownWorkers,
+  emailWorker,
+  schedulerWorker,
+} from "./workers";

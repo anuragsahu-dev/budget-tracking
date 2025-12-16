@@ -35,6 +35,7 @@ export type WebhookResult =
       success: true;
       event: string;
       paymentId?: string;
+      orderId?: string;
       status?: "completed" | "failed" | "refunded";
     }
   | { success: false; event: string; error: string };
