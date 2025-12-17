@@ -19,6 +19,7 @@
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "7.1.0",
     "argon2": "^0.44.0",
+    "bullmq": "^5.66.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
@@ -35,6 +36,8 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "rate-limit-redis": "^4.2.2",
+    "razorpay": "^2.9.6",
+    "uuid": "^13.0.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^4.1.11"
@@ -63,5 +66,8 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.44.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

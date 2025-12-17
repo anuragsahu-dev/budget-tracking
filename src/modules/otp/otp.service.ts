@@ -31,6 +31,7 @@ export class OtpService {
     // Check throttle (prevent spam)
     const throttled = await redisService.get(throttleKey);
     if (throttled) {
+      logger.warn("OTP throttled - too many requests", { userId, email });
       throw new ApiError(429, "Please wait before requesting another OTP");
     }
 
@@ -90,6 +91,7 @@ export class OtpService {
     const isValid = await argon2.verify(otpHash, otp);
 
     if (!isValid) {
+      logger.warn("Invalid OTP attempt", { userId, email });
       throw new ApiError(400, "Invalid OTP");
     }
 

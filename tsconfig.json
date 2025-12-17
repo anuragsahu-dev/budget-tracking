@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "ES2022",
+        "target": "ES2020",
         "module": "CommonJS",
         "moduleResolution": "Node",
         "outDir": "dist",
@@ -12,13 +12,11 @@
         "skipLibCheck": true,
         "declaration": true,
         "resolveJsonModule": true,
-        "typeRoots": [
-            "./node_modules/@types",
-            "./src/types"
-        ]
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "src/types/**/*",
+        "types"
     ],
     "exclude": [
         "node_modules",

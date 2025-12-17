@@ -48,8 +48,20 @@ const errorFileRotate = new DailyRotateFile({
 
 const transportsList: TransportStream[] = [infoFileRotate, errorFileRotate];
 
-// adding the console only in development
-if (config.server.nodeEnv !== "production") {
+// Console logging
+// Development: colorized, human-readable
+// Production: JSON format for Docker logs aggregation
+if (config.server.nodeEnv === "production") {
+  // In production (Docker Swarm), also log to stdout
+  // Docker captures this via `docker service logs`
+  transportsList.push(
+    new transports.Console({
+      level: "info",
+      format: format.combine(format.timestamp(), format.json()),
+    })
+  );
+} else {
+  // Development: colorized console output
   transportsList.push(
     new transports.Console({
       level: "debug",
@@ -58,6 +70,21 @@ if (config.server.nodeEnv !== "production") {
     })
   );
 }
+
+// ============================================================
+// FUTURE: Cloud Logging (Betterstack/Logtail)
+// When you're ready to upgrade, install: npm install @logtail/winston
+// Then uncomment and add LOGTAIL_TOKEN to .env
+// ============================================================
+// import { Logtail } from "@logtail/node";
+// import { LogtailTransport } from "@logtail/winston";
+//
+// const logtailToken = process.env.LOGTAIL_TOKEN;
+// if (logtailToken) {
+//   const logtail = new Logtail(logtailToken);
+//   transportsList.push(new LogtailTransport(logtail));
+//   console.log("☁️  Cloud logging enabled (Logtail)");
+// }
 
 const logger = createLogger({
   level: logLevel,

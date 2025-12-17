@@ -10,6 +10,7 @@ declare global {
       validatedQuery?: ParsedQs;
       validatedBody?: Record<string, unknown>;
       validatedParams?: Record<string, unknown>;
+      rawBody?: string; // For webhook signature verification
     }
   }
 }

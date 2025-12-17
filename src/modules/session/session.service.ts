@@ -7,17 +7,7 @@ import logger from "../../config/logger";
 import { SessionRepository } from "./session.repository";
 import type { CookieOptions } from "express";
 import type { UserRole } from "../../generated/prisma/client";
-
-interface TokenPair {
-  accessToken: string;
-  refreshToken: string;
-}
-
-interface DecodedRefreshToken {
-  id: string;
-  iat: number;
-  exp: number;
-}
+import type { TokenPair, DecodedRefreshToken } from "./session.types";
 
 const isProd = config.server.nodeEnv === "production";
 
@@ -139,10 +129,7 @@ export class SessionService {
 
       return {
         revoked: false,
-        reason:
-          result.error === "NOT_FOUND"
-            ? "Session not found or already revoked"
-            : "Failed to revoke session",
+        reason: result.message,
       };
     }
 

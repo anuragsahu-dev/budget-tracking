@@ -1,10 +1,9 @@
 import passport from "passport";
 import { Router } from "express";
 import { validate } from "../../middlewares/validate.middleware";
-import { emailSchemaOnly, verifySchema } from "./auth.validation";
+import { emailSchemaOnly, fullNameSchemaOnly, verifySchema } from "./auth.validation";
 import { AuthController } from "./auth.controller";
 import { startLimiter } from "../../middlewares/rateLimit.middleware";
-import { fullNameSchema } from "../../validations/common.schema";
 import { verifyJWT } from "../../middlewares/auth.middleware";
 
 const router = Router();
@@ -21,7 +20,7 @@ router.post("/verify", validate({ body: verifySchema }), AuthController.verify);
 router.patch(
   "/setname",
   verifyJWT,
-  validate({ body: fullNameSchema }),
+  validate({ body: fullNameSchemaOnly }),
   AuthController.setName
 );
 

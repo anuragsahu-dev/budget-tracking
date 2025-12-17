@@ -7,7 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-// ======= ENUMS =======
 enum UserRole {
   USER
   ADMIN
@@ -25,18 +24,6 @@ enum TransactionType {
   EXPENSE
 }
 
-enum SubscriptionPlan {
-  PRO_MONTHLY
-  PRO_YEARLY
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  EXPIRED
-  PENDING
-  CANCELLED
-}
-
 model User {
   id       String  @id @default(ulid())
   email    String  @unique
@@ -45,35 +32,42 @@ model User {
 
   isEmailVerified Boolean @default(false)
 
-  googleId String?    @unique
+  googleId String? @unique
 
-  currency String     @default("USD")
+  currency String @default("USD")
 
-  role     UserRole   @default(USER)
-  status   UserStatus @default(ACTIVE)
- 
+  role   UserRole   @default(USER)
+  status UserStatus @default(ACTIVE)
+
   transactions Transaction[]
   categories   Category[] // user-created categories
   budgets      Budget[]
 
-  otps          Otp[]
-  sessions      Session[]
-  subscriptions Subscription[]
+  otps     Otp[]
+  sessions Session[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  subscription Subscription?
+  payments     Payment[]
 }
 
 model Category {
   id        String   @id @default(ulid())
   userId    String?
   name      String
+  slug      String // URL-friendly version of name (e.g., "Food & Drinks" -> "food-drinks")
   color     String?
   createdAt DateTime @default(now())
 
   user              User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions      Transaction[]
   budgetAllocations BudgetAllocation[]
+
+  // System categories (userId is null) must have globally unique slugs
+  // User categories must have unique slugs per user
+  @@unique([userId, slug])
+  @@index([slug]) // For quick lookups when checking against system categories
 }
 
 model Transaction {
@@ -125,7 +119,6 @@ model BudgetAllocation {
   @@unique([budgetId, categoryId]) // one allocation per category per budget/month
 }
 
-// ======= OTP =======
 model Otp {
   id        String   @id @default(uuid())
   userId    String
@@ -156,18 +149,107 @@ model Session {
   @@index([userId])
 }
 
-// // ======= SUBSCRIPTION =======
-model Subscription {
-  id                String             @id @default(ulid())
-  userId            String
-  plan              SubscriptionPlan
-  status            SubscriptionStatus @default(PENDING)
-  startDate         DateTime
-  endDate           DateTime
-  providerPaymentId String? // Stripe/ Razorpay payment id
-  providerOrderId   String? // if provider returns order id
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+enum SubscriptionPlan {
+  PRO_MONTHLY
+  PRO_YEARLY
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  PENDING
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// ======= SUBSCRIPTION (one per user, manual renewal) =======
+model Subscription {
+  id     String @id @default(ulid())
+  userId String @unique // One subscription per user
+
+  plan   SubscriptionPlan // PRO_MONTHLY, PRO_YEARLY
+  status SubscriptionStatus // ACTIVE, EXPIRED, PENDING, CANCELLED
+
+  // When the current period ends (user must pay again before this)
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([status])
+  @@index([expiresAt]) // For cron job to mark expired subscriptions
+}
+
+enum PaymentProvider {
+  RAZORPAY
+  STRIPE
+}
+
+// ======= PAYMENT (payment history for each subscription purchase/renewal) =======
+model Payment {
+  id             String  @id @default(ulid())
+  subscriptionId String?
+  userId         String
+
+  // Plan purchased
+  plan SubscriptionPlan
+
+  provider PaymentProvider
+
+  // Payment amount
+  amount   Decimal @db.Decimal(12, 2)
+  currency String  @db.VarChar(3) // INR, USD
+
+  providerPaymentId String? @unique // Set after payment verified (null during PENDING)
+  providerOrderId   String  @unique // Razorpay order_id (always known when order created)
+
+  status PaymentStatus
+
+  // Failure reason (if payment failed)
+  failureReason String?
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([providerOrderId]) // For Razorpay webhook verification
+}
+
+// ======= PLAN PRICING (admin-managed subscription prices) =======
+model PlanPricing {
+  id       String           @id @default(ulid())
+  plan     SubscriptionPlan
+  currency String           @db.VarChar(3) // INR, USD
+
+  // Price in smallest unit (paise for INR, cents for USD)
+  amount Int
+
+  // Duration in days (30 for monthly, 365 for yearly)
+  durationDays Int
+
+  // Whether this plan is currently active/available for purchase
+  isActive Boolean @default(true)
+
+  // Display info
+  name        String  @db.VarChar(100) // "PRO Monthly", "PRO Yearly"
+  description String? @db.VarChar(500)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([plan, currency])
+  @@index([isActive])
 }
