@@ -36,7 +36,7 @@ export const AuthController = {
   start: asyncHandler(async (req: Request, res: Response) => {
     const startData = getValidatedBody<EmailInput>(req);
     const otp = await AuthService.start(startData);
-    return sendApiResponse(res, 200, "OTP sent successfully", otp);
+    return sendApiResponse(res, 200, otp.message);
   }),
 
   verify: asyncHandler(async (req: Request, res: Response) => {

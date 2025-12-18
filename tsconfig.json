@@ -4,7 +4,6 @@
         "module": "CommonJS",
         "moduleResolution": "Node",
         "outDir": "dist",
-        "rootDir": "src",
         "removeComments": true,
         "strict": true,
         "esModuleInterop": true,
@@ -15,8 +14,7 @@
     },
     "include": [
         "src/**/*",
-        "src/types/**/*",
-        "types"
+        "src/types/**/*"
     ],
     "exclude": [
         "node_modules",

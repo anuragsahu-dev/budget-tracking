@@ -20,10 +20,10 @@ export function isPrismaError(
 }
 
 // Repository result types (discriminated union pattern)
-export type SuccessResult<T> = {
+export interface SuccessResult<T> {
   success: true;
   data: T;
-};
+}
 
 export type ErrorType =
   | "NOT_FOUND"
@@ -33,12 +33,12 @@ export type ErrorType =
   | "INVALID_REFERENCE"
   | "UNKNOWN";
 
-export type ErrorResult = {
+export interface ErrorResult {
   success: false;
   error: ErrorType;
   statusCode: number;
   message: string;
-};
+}
 
 export type RepositoryResult<T> = SuccessResult<T> | ErrorResult;
 

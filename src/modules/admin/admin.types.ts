@@ -6,7 +6,7 @@ import {
   Payment,
 } from "../../generated/prisma/client";
 
-export type SafeUser = {
+export interface SafeUser {
   id: string;
   email: string;
   fullName: string | null;
@@ -17,7 +17,7 @@ export type SafeUser = {
   status: UserStatus;
   createdAt: Date;
   updatedAt: Date;
-};
+}
 
 export interface UserFilters {
   role?: UserRole;

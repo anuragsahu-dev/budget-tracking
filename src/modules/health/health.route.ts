@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { totalmem } from "os";
 import prisma from "../../config/prisma";
 import redis from "../../config/redis";
 import { verifyJWT } from "../../middlewares/auth.middleware";
@@ -78,7 +79,7 @@ router.get("/ready", async (_req: Request, res: Response) => {
       status: "up",
       latency: Date.now() - dbStart,
     };
-  } catch (error) {
+  } catch (_error) {
     checks.database = {
       status: "down",
       latency: Date.now() - dbStart,
@@ -95,7 +96,7 @@ router.get("/ready", async (_req: Request, res: Response) => {
       status: "up",
       latency: Date.now() - redisStart,
     };
-  } catch (error) {
+  } catch (_error) {
     checks.redis = {
       status: "down",
       latency: Date.now() - redisStart,
@@ -159,7 +160,7 @@ export async function getFullHealthStatus(): Promise<HealthStatus> {
 
   // Get memory usage
   const memUsage = process.memoryUsage();
-  const totalMem = require("os").totalmem();
+  const totalMem = totalmem();
   const usedMem = memUsage.heapUsed;
 
   const system: SystemInfo = {

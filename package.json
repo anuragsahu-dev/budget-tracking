@@ -7,7 +7,14 @@
     "dev": "nodemon --legacy-watch",
     "lint": "npx eslint .",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "seed": "prisma db seed",
+    "start": "node dist/index.js",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:unit": "vitest --run test/unit",
+    "test:integration": "vitest --run test/integration",
+    "test:coverage": "vitest --run --coverage",
+    "test:ui": "vitest --ui"
   },
   "keywords": [
     "budget"
@@ -44,6 +51,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@testcontainers/postgresql": "^11.10.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.9",
     "@types/cors": "^2.8.19",
@@ -59,15 +67,19 @@
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/rate-limit-redis": "^1.7.4",
+    "@types/supertest": "^6.0.3",
     "eslint": "^9.36.0",
+    "ioredis-mock": "^8.13.1",
     "nodemon": "^3.1.10",
     "prisma": "7.1.0",
+    "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.44.0"
+    "typescript-eslint": "^8.44.0",
+    "vitest": "^4.0.16"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }

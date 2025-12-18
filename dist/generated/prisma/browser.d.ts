@@ -1,0 +1,14 @@
+import * as Prisma from './internal/prismaNamespaceBrowser';
+export { Prisma };
+export * as $Enums from './enums';
+export * from './enums';
+export type User = Prisma.UserModel;
+export type Category = Prisma.CategoryModel;
+export type Transaction = Prisma.TransactionModel;
+export type Budget = Prisma.BudgetModel;
+export type BudgetAllocation = Prisma.BudgetAllocationModel;
+export type Otp = Prisma.OtpModel;
+export type Session = Prisma.SessionModel;
+export type Subscription = Prisma.SubscriptionModel;
+export type Payment = Prisma.PaymentModel;
+export type PlanPricing = Prisma.PlanPricingModel;

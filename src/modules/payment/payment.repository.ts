@@ -1,10 +1,5 @@
 import prisma from "../../config/prisma";
-import {
-  Prisma,
-  Payment,
-  PaymentStatus,
-  PaymentProvider,
-} from "../../generated/prisma/client";
+import { Prisma, Payment, PaymentStatus } from "../../generated/prisma/client";
 import {
   PRISMA_ERROR,
   isPrismaError,

@@ -4,6 +4,8 @@ import redis from "../config/redis";
 
 import type { RedisReply } from "rate-limit-redis";
 
+const isTest = process.env.NODE_ENV === "test";
+
 interface RateLimitOptions {
   windowMs: number;
   max: number;
@@ -11,8 +13,8 @@ interface RateLimitOptions {
   message?: string;
 }
 
-function redisRateLimiter(options: RateLimitOptions) {
-  return rateLimit({
+function createRateLimiter(options: RateLimitOptions) {
+  const baseConfig = {
     windowMs: options.windowMs,
     max: options.max,
     standardHeaders: true,
@@ -21,28 +23,36 @@ function redisRateLimiter(options: RateLimitOptions) {
       status: 429,
       error: options.message || "Too many requests, please try again later.",
     },
+  };
+
+  // Use in-memory store for tests
+  if (isTest) {
+    return rateLimit(baseConfig);
+  }
+
+  // Use Redis store for production
+  return rateLimit({
+    ...baseConfig,
     store: new RedisStore({
       prefix: options.keyPrefix,
-      sendCommand: (
-        command: string,
-        ...args: string[]
-      ): Promise<RedisReply> => {
-        return redis.call(command, ...args) as Promise<RedisReply>;
-      },
+      sendCommand: (command: string, ...args: string[]): Promise<RedisReply> =>
+        redis.call(command, ...args) as Promise<RedisReply>,
     }),
   });
 }
 
-export const globalLimiter = redisRateLimiter({
+// Global rate limiter: 100 requests per 15 minutes
+export const globalLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: "Too many requests, please try again later.",
   keyPrefix: "global:",
+  message: "Too many requests, please try again later.",
 });
 
-export const startLimiter = redisRateLimiter({
+// Auth start rate limiter: 6 attempts per 15 minutes
+export const startLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 6,
-  message: "Too many attempts. Please slow down.",
   keyPrefix: "start:",
+  message: "Too many attempts. Please slow down.",
 });
