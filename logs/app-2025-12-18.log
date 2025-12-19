@@ -124,3 +124,5 @@
 {"jobs":[{"every":"21600000","name":"cleanup-expired-otps"},{"every":"86400000","name":"cleanup-old-sessions"},{"every":"3600000","name":"expire-subscriptions"}],"level":"info","message":"Scheduled jobs configured","timestamp":"2025-12-18 18:24:23"}
 {"level":"info","message":"Background workers initialized","timestamp":"2025-12-18 18:24:23","workers":["email","scheduler"]}
 {"level":"info","message":"Server running on PORT: 3000 [development]","timestamp":"2025-12-18 18:24:23"}
+{"address":"172.19.0.3","code":"ECONNREFUSED","errno":-111,"level":"error","message":"Redis error: connect ECONNREFUSED 172.19.0.3:6379","port":6379,"stack":"Error: connect ECONNREFUSED 172.19.0.3:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)","syscall":"connect","timestamp":"2025-12-18 18:26:45"}
+{"address":"172.19.0.3","code":"ECONNREFUSED","errno":-111,"level":"error","message":"Redis error: connect ECONNREFUSED 172.19.0.3:6379","port":6379,"stack":"Error: connect ECONNREFUSED 172.19.0.3:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)","syscall":"connect","timestamp":"2025-12-18 18:26:45"}

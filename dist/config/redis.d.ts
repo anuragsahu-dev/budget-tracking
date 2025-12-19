@@ -1,8 +1,8 @@
 import Redis from "ioredis";
-declare const redis: Redis;
 export declare const bullmqConnection: {
     host: string;
     port: number;
     maxRetriesPerRequest: null;
 };
+declare const redis: Redis;
 export default redis;

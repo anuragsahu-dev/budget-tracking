@@ -67,6 +67,8 @@ exports.UserScalarFieldEnum = {
     email: 'email',
     fullName: 'fullName',
     password: 'password',
+    avatarUrl: 'avatarUrl',
+    avatarId: 'avatarId',
     isEmailVerified: 'isEmailVerified',
     googleId: 'googleId',
     currency: 'currency',

@@ -40,4 +40,10 @@ export declare const config: {
         readonly keySecret: string;
         readonly webhookSecret: string;
     };
+    readonly aws: {
+        readonly region: string;
+        readonly accessKeyId: string;
+        readonly secretAccessKey: string;
+        readonly s3BucketName: string;
+    };
 };

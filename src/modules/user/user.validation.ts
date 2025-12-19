@@ -6,3 +6,20 @@ export const updateProfileSchema = z.object({
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+// Avatar validation schemas
+export const getAvatarUploadUrlSchema = z.object({
+  mime: z.enum(["jpeg", "jpg", "png", "webp"], {
+    error: "Invalid image type. Allowed: jpeg, jpg, png, webp",
+  }),
+});
+
+export const confirmAvatarUploadSchema = z.object({
+  avatarId: z.string().min(1, "Avatar ID is required"),
+  avatarUrl: z.string().url("Invalid avatar URL"),
+});
+
+export type GetAvatarUploadUrlInput = z.infer<typeof getAvatarUploadUrlSchema>;
+export type ConfirmAvatarUploadInput = z.infer<
+  typeof confirmAvatarUploadSchema
+>;

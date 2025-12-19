@@ -27,5 +27,5 @@ exports.listCategoriesQuerySchema = zod_1.z.object({
     includeSystem: zod_1.z
         .enum(["true", "false"])
         .optional()
-        .transform((val) => val === "true"),
+        .transform((val) => val !== "false"),
 });

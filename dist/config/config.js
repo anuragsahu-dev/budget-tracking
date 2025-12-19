@@ -58,11 +58,17 @@ exports.config = {
     google: {
         clientId: getEnvVariable("GOOGLE_CLIENT_ID"),
         clientSecret: getEnvVariable("GOOGLE_CLIENT_SECRET"),
-        callbackUrl: getEnvVariable("GOOGLE_CALLBACK_URL")
+        callbackUrl: getEnvVariable("GOOGLE_CALLBACK_URL"),
     },
     razorpay: {
         keyId: getEnvVariable("RAZORPAY_KEY_ID"),
         keySecret: getEnvVariable("RAZORPAY_KEY_SECRET"),
-        webhookSecret: getEnvVariable("RAZORPAY_WEBHOOK_SECRET")
-    }
+        webhookSecret: getEnvVariable("RAZORPAY_WEBHOOK_SECRET"),
+    },
+    aws: {
+        region: getEnvVariable("AWS_REGION"),
+        accessKeyId: getEnvVariable("AWS_ACCESS_KEY_ID"),
+        secretAccessKey: getEnvVariable("AWS_SECRET_ACCESS_KEY"),
+        s3BucketName: getEnvVariable("AWS_S3_BUCKET_NAME"),
+    },
 };
