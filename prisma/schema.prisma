@@ -31,7 +31,7 @@ model User {
   password String?
 
   avatarUrl String? @default("default-avatar.png")
-  avatarId  String? @db.VarChar(80) @default("default-avatarId")
+  avatarId  String? @default("default-avatarId") @db.VarChar(80)
 
   isEmailVerified Boolean @default(false)
 
@@ -133,8 +133,8 @@ model Otp {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, email])
-  @@index([expiresAt])
+  @@index([userId, email]) // it apply composite index on the userId and email. this is helpful when you search with both userId and email
+  @@index([expiresAt]) // it apply index on the expiresAt. this is helpful when you search with expiresAt
 }
 
 model Session {

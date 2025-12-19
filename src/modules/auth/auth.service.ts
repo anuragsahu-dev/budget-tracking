@@ -18,7 +18,7 @@ export class AuthService {
       });
 
       if (!result.success) {
-        throw new ApiError(result.statusCode, result.message);
+        throw new ApiError(result.statusCode, result.message, result.error);
       }
 
       user = result.data;
@@ -55,7 +55,11 @@ export class AuthService {
     });
 
     if (!updateResult.success) {
-      throw new ApiError(updateResult.statusCode, "failed to verify email");
+      throw new ApiError(
+        updateResult.statusCode,
+        "failed to verify email",
+        updateResult.error
+      );
     }
 
     const updatedUser = updateResult.data;
@@ -87,7 +91,11 @@ export class AuthService {
     });
 
     if (!updateResult.success) {
-      throw new ApiError(updateResult.statusCode, "failed to update name");
+      throw new ApiError(
+        updateResult.statusCode,
+        "failed to update name",
+        updateResult.error
+      );
     }
 
     const updatedUser = updateResult.data;
@@ -99,7 +107,7 @@ export class AuthService {
       fullName: updatedUser.fullName,
     };
 
-    return responseData;
+    return { message: "Name updated successfully", data: responseData };
   }
 
   static async me(id: string) {
@@ -115,6 +123,6 @@ export class AuthService {
       fullName: user.fullName,
     };
 
-    return responseData;
+    return { message: "User fetched successfully", data: responseData };
   }
 }

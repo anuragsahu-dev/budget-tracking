@@ -54,19 +54,4 @@ export class UserRepository {
       return unknownError("Failed to update user", error);
     }
   }
-
-  static async deleteUser(id: string): Promise<RepositoryResult<User>> {
-    try {
-      const user = await prisma.user.delete({ where: { id } });
-      return { success: true, data: user };
-    } catch (error) {
-      if (
-        isPrismaError(error) &&
-        error.code === PRISMA_ERROR.RECORD_NOT_FOUND
-      ) {
-        return notFoundError("User not found");
-      }
-      return unknownError("Failed to delete user", error);
-    }
-  }
 }

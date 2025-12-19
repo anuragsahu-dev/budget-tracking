@@ -15,6 +15,8 @@ import {
 
 const router = Router();
 
+router.use(verifyJWT);
+
 // ========== BUDGET ROUTES ==========
 
 /**
@@ -28,7 +30,6 @@ const router = Router();
  */
 router.get(
   "/",
-  verifyJWT,
   validate({ query: listBudgetsQuerySchema }),
   BudgetController.getAllBudgets
 );
@@ -41,7 +42,6 @@ router.get(
  */
 router.get(
   "/:id",
-  verifyJWT,
   validate({ params: budgetIdParamSchema }),
   BudgetController.getBudgetById
 );
@@ -57,7 +57,6 @@ router.get(
  */
 router.post(
   "/",
-  verifyJWT,
   validate({ body: createBudgetSchema }),
   BudgetController.createBudget
 );
@@ -72,7 +71,6 @@ router.post(
  */
 router.patch(
   "/:id",
-  verifyJWT,
   validate({ params: budgetIdParamSchema, body: updateBudgetSchema }),
   BudgetController.updateBudget
 );
@@ -85,7 +83,6 @@ router.patch(
  */
 router.delete(
   "/:id",
-  verifyJWT,
   validate({ params: budgetIdParamSchema }),
   BudgetController.deleteBudget
 );
@@ -102,7 +99,6 @@ router.delete(
  */
 router.post(
   "/:budgetId/allocations",
-  verifyJWT,
   validate({
     params: budgetAllocationParamsSchema,
     body: createAllocationSchema,
@@ -120,7 +116,6 @@ router.post(
  */
 router.patch(
   "/:budgetId/allocations/:id",
-  verifyJWT,
   validate({ params: allocationIdParamSchema, body: updateAllocationSchema }),
   BudgetController.updateAllocation
 );
@@ -134,7 +129,6 @@ router.patch(
  */
 router.delete(
   "/:budgetId/allocations/:id",
-  verifyJWT,
   validate({ params: allocationIdParamSchema }),
   BudgetController.deleteAllocation
 );

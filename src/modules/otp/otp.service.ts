@@ -41,7 +41,7 @@ export class OtpService {
 
     // Store in Redis (primary) and DB (backup)
     await redisService.set(otpKey, otpHash, this.getOtpTtlSeconds());
-    await redisService.set(throttleKey, "1", this.OTP_RESEND_LIMIT_SECONDS);
+    await redisService.set(throttleKey, "1", this.OTP_RESEND_LIMIT_SECONDS); // this is helpful to prevent resend in a short time
 
     await prisma.otp.create({
       data: {
@@ -54,11 +54,6 @@ export class OtpService {
 
     logger.info(`OTP created for user ${userId}`);
     return otp;
-  }
-
-  async resendOtp(userId: string, email: string): Promise<string> {
-    await this.clearExistingOtp(userId, email);
-    return this.createOtp(userId, email);
   }
 
   async verifyOtp(userId: string, email: string, otp: string) {

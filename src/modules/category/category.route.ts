@@ -11,6 +11,8 @@ import {
 
 const router = Router();
 
+router.use(verifyJWT);
+
 /**
  * @route   GET /api/v1/categories
  * @desc    Get all categories (system + user's own)
@@ -19,7 +21,6 @@ const router = Router();
  */
 router.get(
   "/",
-  verifyJWT,
   validate({ query: listCategoriesQuerySchema }),
   CategoryController.getAllCategories
 );
@@ -31,7 +32,6 @@ router.get(
  */
 router.get(
   "/:id",
-  verifyJWT,
   validate({ params: categoryIdParamSchema }),
   CategoryController.getCategoryById
 );
@@ -43,7 +43,6 @@ router.get(
  */
 router.post(
   "/",
-  verifyJWT,
   validate({ body: createCategorySchema }),
   CategoryController.createCategory
 );
@@ -55,7 +54,6 @@ router.post(
  */
 router.patch(
   "/:id",
-  verifyJWT,
   validate({ params: categoryIdParamSchema, body: updateCategorySchema }),
   CategoryController.updateCategory
 );
@@ -67,7 +65,6 @@ router.patch(
  */
 router.delete(
   "/:id",
-  verifyJWT,
   validate({ params: categoryIdParamSchema }),
   CategoryController.deleteCategory
 );
