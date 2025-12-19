@@ -95,3 +95,8 @@
 {"level":"info","message":"OTP verified successfully for user 01KCTW4PR23T39MWFVNARMF95M","timestamp":"2025-12-19 09:54:42"}
 {"isFirstLogin":false,"level":"info","message":"User verified and logged in","timestamp":"2025-12-19 09:54:42","userId":"01KCTW4PR23T39MWFVNARMF95M"}
 {"level":"info","message":"Session created successfully","timestamp":"2025-12-19 09:54:42","userId":"01KCTW4PR23T39MWFVNARMF95M"}
+{"categoryId":"01KCV0N5VNPYE18HJSV3DCPTSS","level":"info","message":"Category created","slug":"tum-jo-milo-ho-mujko-aur-sunhari-mein-lagti-hoon","timestamp":"2025-12-19 09:57:02","userId":"01KCTW4PR23T39MWFVNARMF95M"}
+{"jobId":"repeat:8ad06b5a6a80735f8da6a86617ba45b1:1766138400000","level":"info","message":"Scheduled job started: expire-subscriptions","timestamp":"2025-12-19 10:00:00"}
+{"level":"debug","message":"No subscriptions to expire","timestamp":"2025-12-19 10:00:00"}
+{"durationMs":32,"jobId":"repeat:8ad06b5a6a80735f8da6a86617ba45b1:1766138400000","level":"info","message":"Scheduled job completed: expire-subscriptions","timestamp":"2025-12-19 10:00:00"}
+{"jobId":"repeat:8ad06b5a6a80735f8da6a86617ba45b1:1766138400000","level":"debug","message":"Scheduler job completed","name":"expire-subscriptions","timestamp":"2025-12-19 10:00:00"}
