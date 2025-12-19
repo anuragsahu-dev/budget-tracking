@@ -1,15 +1,16 @@
-node_modules/
+node_modules
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-dist/
+dist
 
 .env
 
-logs/
+logs
 
-.vscode/
+.vscode
 
-src/generated/prisma/
+src/generated/prisma
