@@ -2,7 +2,6 @@ import prisma from "../../config/prisma";
 import {
   Prisma,
   Category,
-  UserRole,
   UserStatus,
   Payment,
   PaymentStatus,

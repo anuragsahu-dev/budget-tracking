@@ -37,7 +37,6 @@ export const CategoryController = {
     );
   }),
 
-
   getCategoryById: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;
     const { id } = getValidatedParams<CategoryIdParam>(req);
@@ -46,7 +45,6 @@ export const CategoryController = {
 
     return sendApiResponse(res, 200, "Category fetched successfully", category);
   }),
-
 
   createCategory: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;
@@ -57,7 +55,6 @@ export const CategoryController = {
     return sendApiResponse(res, 201, "Category created successfully", category);
   }),
 
- 
   updateCategory: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;
     const { id } = getValidatedParams<CategoryIdParam>(req);
@@ -67,7 +64,6 @@ export const CategoryController = {
 
     return sendApiResponse(res, 200, "Category updated successfully", category);
   }),
-
 
   deleteCategory: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;

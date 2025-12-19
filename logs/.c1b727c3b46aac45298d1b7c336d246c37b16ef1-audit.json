@@ -6,24 +6,14 @@
     "auditLog": "C:\\Users\\HP\\OneDrive\\Desktop\\Main\\Project 4\\02-Budget-Tracking\\logs\\.c1b727c3b46aac45298d1b7c336d246c37b16ef1-audit.json",
     "files": [
         {
-            "date": 1758472453380,
-            "name": "C:\\Users\\HP\\OneDrive\\Desktop\\Main\\Project 4\\02-Budget-Tracking\\logs\\error-2025-09-21.log",
-            "hash": "87f7c342a5a91427b5667fe981c9d0348984b8e2d4848a8a89e0d22b4e2e7fad"
+            "date": 1766072958811,
+            "name": "C:\\Users\\HP\\OneDrive\\Desktop\\Main\\Project 4\\02-Budget-Tracking\\logs\\error-2025-12-18.log",
+            "hash": "ad3a6732a1edaef0ce138724167530af715473f975f0226429bc22dd1bb55273"
         },
         {
-            "date": 1758644799747,
-            "name": "C:\\Users\\HP\\OneDrive\\Desktop\\Main\\Project 4\\02-Budget-Tracking\\logs\\error-2025-09-23.log",
-            "hash": "50816fc9a0c4f72700875cea22f16235f38f7a8efbe57f8fb2d44d5b4af937b7"
-        },
-        {
-            "date": 1759152374820,
-            "name": "C:\\Users\\HP\\OneDrive\\Desktop\\Main\\Project 4\\02-Budget-Tracking\\logs\\error-2025-09-29.log",
-            "hash": "3b7f287ff393426b19a6c2c7eedb1441b88566b94f5387b0117d5c6b4654007c"
-        },
-        {
-            "date": 1759413475598,
-            "name": "C:\\Users\\HP\\OneDrive\\Desktop\\Main\\Project 4\\02-Budget-Tracking\\logs\\error-2025-10-02.log",
-            "hash": "fe9b9aac8f6a5d35f9165ac5ee2638f9c94e4502a3093f85fe6448dfdf94d230"
+            "date": 1766132185421,
+            "name": "C:\\Users\\HP\\OneDrive\\Desktop\\Main\\Project 4\\02-Budget-Tracking\\logs\\error-2025-12-19.log",
+            "hash": "d0767689019848374062342f00313fa7dc96cddfe42750355be453b93a8038b0"
         }
     ],
     "hashType": "sha256"

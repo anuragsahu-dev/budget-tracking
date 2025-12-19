@@ -1,0 +1,23 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const passport_1 = __importDefault(require("passport"));
+const express_1 = require("express");
+const validate_middleware_1 = require("../../middlewares/validate.middleware");
+const auth_validation_1 = require("./auth.validation");
+const auth_controller_1 = require("./auth.controller");
+const rateLimit_middleware_1 = require("../../middlewares/rateLimit.middleware");
+const auth_middleware_1 = require("../../middlewares/auth.middleware");
+const router = (0, express_1.Router)();
+router.post("/start", rateLimit_middleware_1.startLimiter, (0, validate_middleware_1.validate)({ body: auth_validation_1.emailSchemaOnly }), auth_controller_1.AuthController.start);
+router.post("/verify", rateLimit_middleware_1.verifyLimiter, (0, validate_middleware_1.validate)({ body: auth_validation_1.verifySchema }), auth_controller_1.AuthController.verify);
+router.patch("/setname", auth_middleware_1.verifyJWT, (0, validate_middleware_1.validate)({ body: auth_validation_1.fullNameSchemaOnly }), auth_controller_1.AuthController.setName);
+router.get("/me", auth_middleware_1.verifyJWT, auth_controller_1.AuthController.me);
+router.get("/google", rateLimit_middleware_1.oauthLimiter, passport_1.default.authenticate("google", { scope: ["profile", "email"] }));
+router.get("/google/callback", passport_1.default.authenticate("google", { session: false }), auth_controller_1.AuthController.googleCallback);
+router.post("/logout", auth_controller_1.AuthController.logout);
+router.post("/logout-all", auth_middleware_1.verifyJWT, auth_controller_1.AuthController.logoutAll);
+router.post("/refresh-token", rateLimit_middleware_1.refreshLimiter, auth_controller_1.AuthController.refreshToken);
+exports.default = router;

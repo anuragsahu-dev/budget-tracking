@@ -22,13 +22,23 @@ async function main() {
 
   console.log("📁 Seeding system categories...");
   for (const cat of systemCategories) {
-    await prisma.category.upsert({
-      where: {
-        userId_slug: { userId: null as unknown as string, slug: cat.slug },
-      },
-      update: { name: cat.name, color: cat.color },
-      create: { ...cat, userId: null },
+    // Check if system category exists (userId is null)
+    const existing = await prisma.category.findFirst({
+      where: { userId: null, slug: cat.slug },
     });
+
+    if (existing) {
+      // Update existing
+      await prisma.category.update({
+        where: { id: existing.id },
+        data: { name: cat.name, color: cat.color },
+      });
+    } else {
+      // Create new
+      await prisma.category.create({
+        data: { ...cat, userId: null },
+      });
+    }
   }
   console.log(
     `   ✅ ${systemCategories.length} system categories created/updated\n`

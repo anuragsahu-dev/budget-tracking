@@ -40,7 +40,7 @@ export const listCategoriesQuerySchema = z.object({
   includeSystem: z
     .enum(["true", "false"])
     .optional()
-    .transform((val) => val === "true"),
+    .transform((val) => val !== "false"), // Default true when undefined or "true"
 });
 
 export type ListCategoriesQuery = z.infer<typeof listCategoriesQuerySchema>;

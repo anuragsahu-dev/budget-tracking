@@ -19,7 +19,6 @@ import type {
 } from "./budget.validation";
 
 export const BudgetController = {
-
   getAllBudgets: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;
     const query = getValidatedQuery<ListBudgetsQuery>(req);

@@ -3,6 +3,7 @@ import type { ParsedQs } from "qs";
 import type { UserRole } from "../generated/prisma/client";
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       userId?: string;

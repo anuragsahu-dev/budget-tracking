@@ -106,13 +106,13 @@ export class TransactionService {
 
     if (data.categoryId) await verifyCategoryAccess(data.categoryId, userId);
 
-    type UpdateData = {
+    interface UpdateData {
       amount?: number;
       type?: TransactionType;
       description?: string | null;
       date?: Date;
       category?: { connect: { id: string } } | { disconnect: true };
-    };
+    }
 
     const updateData: UpdateData = {};
     if (data.amount !== undefined) updateData.amount = data.amount;

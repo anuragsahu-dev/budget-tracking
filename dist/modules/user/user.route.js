@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const validate_middleware_1 = require("../../middlewares/validate.middleware");
+const user_controller_1 = require("./user.controller");
+const auth_middleware_1 = require("../../middlewares/auth.middleware");
+const rateLimit_middleware_1 = require("../../middlewares/rateLimit.middleware");
+const user_validation_1 = require("./user.validation");
+const router = (0, express_1.Router)();
+router.get("/profile", auth_middleware_1.verifyJWT, user_controller_1.UserController.getProfile);
+router.patch("/profile", auth_middleware_1.verifyJWT, (0, validate_middleware_1.validate)({ body: user_validation_1.updateProfileSchema }), user_controller_1.UserController.updateProfile);
+router.get("/avatar/upload-url", auth_middleware_1.verifyJWT, rateLimit_middleware_1.avatarUploadLimiter, (0, validate_middleware_1.validate)({ query: user_validation_1.getAvatarUploadUrlSchema }), user_controller_1.UserController.getAvatarUploadUrl);
+router.patch("/avatar", auth_middleware_1.verifyJWT, (0, validate_middleware_1.validate)({ body: user_validation_1.confirmAvatarUploadSchema }), user_controller_1.UserController.confirmAvatarUpload);
+router.delete("/avatar", auth_middleware_1.verifyJWT, user_controller_1.UserController.deleteAvatar);
+exports.default = router;

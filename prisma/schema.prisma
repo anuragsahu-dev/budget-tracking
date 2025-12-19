@@ -30,6 +30,9 @@ model User {
   fullName String?
   password String?
 
+  avatarUrl String? @default("default-avatar.png")
+  avatarId  String? @db.VarChar(80) @default("default-avatarId")
+
   isEmailVerified Boolean @default(false)
 
   googleId String? @unique
