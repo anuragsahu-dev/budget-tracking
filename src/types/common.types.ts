@@ -14,19 +14,3 @@ export interface CategorySelect {
   slug: string;
   color: string | null;
 }
-
-// ==================== PAGINATION ====================
-
-/**
- * Base pagination options - extend for module-specific sorting
- */
-export interface BasePaginationOptions {
-  page: number;
-  limit: number;
-  sortOrder: "asc" | "desc";
-}
-
-/**
- * Common sort fields used across modules
- */
-export type CommonSortField = "createdAt" | "updatedAt";

@@ -3,8 +3,12 @@ import {
   Prisma,
   Category,
   UserStatus,
+  UserRole,
   Payment,
   PaymentStatus,
+  Subscription,
+  SubscriptionStatus,
+  SubscriptionPlan,
 } from "../../generated/prisma/client";
 import {
   PRISMA_ERROR,
@@ -23,6 +27,8 @@ import type {
   UserFilters,
   PaginationOptions,
   PaymentFilters,
+  SubscriptionFilters,
+  SubscriptionWithUser,
 } from "./admin.types";
 
 // Re-export types for consumers
@@ -136,11 +142,12 @@ export class AdminRepository {
     filters: UserFilters,
     pagination: PaginationOptions
   ): Promise<PaginatedResult<SafeUser>> {
-    const { role, status, search } = filters;
+    const { status, search } = filters;
     const { page, limit, sortBy, sortOrder } = pagination;
 
     const whereClause: Prisma.UserWhereInput = {
-      ...(role && { role }),
+      // Only fetch regular users, never admins
+      role: UserRole.USER,
       ...(status && { status }),
       ...(search && {
         OR: [
@@ -327,5 +334,170 @@ export class AdminRepository {
       refundedPayments,
       totalRevenue: Number(totalRevenue._sum.amount ?? 0),
     };
+  }
+
+  // ========== SUBSCRIPTION MANAGEMENT METHODS ==========
+
+  /**
+   * Find all subscriptions with filters and pagination
+   */
+  static async findAllSubscriptions(
+    filters: SubscriptionFilters,
+    pagination: PaginationOptions
+  ): Promise<PaginatedResult<SubscriptionWithUser>> {
+    const { status, plan, expiringWithinDays } = filters;
+    const { page, limit, sortBy, sortOrder } = pagination;
+
+    const whereClause: Prisma.SubscriptionWhereInput = {
+      ...(status && { status }),
+      ...(plan && { plan }),
+      ...(expiringWithinDays && {
+        expiresAt: {
+          lte: new Date(Date.now() + expiringWithinDays * 24 * 60 * 60 * 1000),
+          gte: new Date(),
+        },
+        status: SubscriptionStatus.ACTIVE,
+      }),
+    };
+
+    const skip = (page - 1) * limit;
+
+    const [subscriptions, total] = await Promise.all([
+      prisma.subscription.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: { id: true, email: true, fullName: true },
+          },
+        },
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      prisma.subscription.count({ where: whereClause }),
+    ]);
+
+    return {
+      data: subscriptions as SubscriptionWithUser[],
+      meta: createPaginationMeta(total, page, limit),
+    };
+  }
+
+  /**
+   * Find subscription by ID with user details
+   */
+  static async findSubscriptionById(id: string) {
+    return prisma.subscription.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: { id: true, email: true, fullName: true },
+        },
+        payments: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+      },
+    });
+  }
+
+  /**
+   * Update subscription by ID
+   */
+  static async updateSubscriptionById(
+    id: string,
+    data: { status?: SubscriptionStatus; expiresAt?: Date }
+  ): Promise<RepositoryResult<Subscription>> {
+    try {
+      const subscription = await prisma.subscription.update({
+        where: { id },
+        data,
+      });
+      return { success: true, data: subscription };
+    } catch (error) {
+      if (
+        isPrismaError(error) &&
+        error.code === PRISMA_ERROR.RECORD_NOT_FOUND
+      ) {
+        return notFoundError("Subscription not found");
+      }
+      return unknownError("Failed to update subscription", error);
+    }
+  }
+
+  /**
+   * Get subscription statistics
+   */
+  static async getSubscriptionStats() {
+    const [
+      totalSubscriptions,
+      activeSubscriptions,
+      expiredSubscriptions,
+      cancelledSubscriptions,
+      monthlySubscriptions,
+      yearlySubscriptions,
+      expiringIn7Days,
+    ] = await Promise.all([
+      prisma.subscription.count(),
+      prisma.subscription.count({
+        where: { status: SubscriptionStatus.ACTIVE },
+      }),
+      prisma.subscription.count({
+        where: { status: SubscriptionStatus.EXPIRED },
+      }),
+      prisma.subscription.count({
+        where: { status: SubscriptionStatus.CANCELLED },
+      }),
+      prisma.subscription.count({
+        where: {
+          plan: SubscriptionPlan.PRO_MONTHLY,
+          status: SubscriptionStatus.ACTIVE,
+        },
+      }),
+      prisma.subscription.count({
+        where: {
+          plan: SubscriptionPlan.PRO_YEARLY,
+          status: SubscriptionStatus.ACTIVE,
+        },
+      }),
+      prisma.subscription.count({
+        where: {
+          status: SubscriptionStatus.ACTIVE,
+          expiresAt: {
+            lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            gte: new Date(),
+          },
+        },
+      }),
+    ]);
+
+    return {
+      totalSubscriptions,
+      activeSubscriptions,
+      expiredSubscriptions,
+      cancelledSubscriptions,
+      monthlySubscriptions,
+      yearlySubscriptions,
+      expiringIn7Days,
+    };
+  }
+
+  // ========== SESSION MANAGEMENT ==========
+
+  /**
+   * Revoke all sessions for a user (force logout)
+   */
+  static async revokeAllUserSessions(
+    userId: string
+  ): Promise<RepositoryResult<{ count: number }>> {
+    try {
+      const result = await prisma.session.updateMany({
+        where: { userId, isRevoked: false },
+        data: { isRevoked: true },
+      });
+      return { success: true, data: { count: result.count } };
+    } catch (error) {
+      return unknownError("Failed to revoke user sessions", error);
+    }
   }
 }

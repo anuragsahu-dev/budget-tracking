@@ -20,6 +20,9 @@ import type {
   CreatePlanPricingInput,
   UpdatePlanPricingInput,
   PlanPricingIdParam,
+  ListSubscriptionsQuery,
+  SubscriptionIdParam,
+  UpdateSubscriptionInput,
 } from "./admin.validation";
 
 export const AdminController = {
@@ -198,5 +201,72 @@ export const AdminController = {
     const result = await AdminService.deletePlanPricing(id);
 
     return sendApiResponse(res, 200, result.message, null);
+  }),
+
+  // ========== SUBSCRIPTION MANAGEMENT ENDPOINTS ==========
+
+  getAllSubscriptions: asyncHandler(async (req: Request, res: Response) => {
+    const query = getValidatedQuery<ListSubscriptionsQuery>(req);
+
+    const result = await AdminService.getAllSubscriptions(query);
+
+    return sendApiResponse(
+      res,
+      200,
+      "Subscriptions fetched successfully",
+      result.subscriptions,
+      result.meta
+    );
+  }),
+
+  getSubscriptionById: asyncHandler(async (req: Request, res: Response) => {
+    const { id } = getValidatedParams<SubscriptionIdParam>(req);
+
+    const subscription = await AdminService.getSubscriptionById(id);
+
+    return sendApiResponse(
+      res,
+      200,
+      "Subscription fetched successfully",
+      subscription
+    );
+  }),
+
+  updateSubscription: asyncHandler(async (req: Request, res: Response) => {
+    const { id } = getValidatedParams<SubscriptionIdParam>(req);
+    const data = getValidatedBody<UpdateSubscriptionInput>(req);
+
+    const subscription = await AdminService.updateSubscription(id, data);
+
+    return sendApiResponse(
+      res,
+      200,
+      "Subscription updated successfully",
+      subscription
+    );
+  }),
+
+  getSubscriptionStats: asyncHandler(async (_req: Request, res: Response) => {
+    const stats = await AdminService.getSubscriptionStats();
+
+    return sendApiResponse(
+      res,
+      200,
+      "Subscription statistics fetched successfully",
+      stats
+    );
+  }),
+
+  // ========== FORCE LOGOUT ENDPOINT ==========
+
+  forceLogoutUser: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
+    const { id } = getValidatedParams<UserIdParam>(req);
+
+    const result = await AdminService.forceLogoutUser(id, adminId);
+
+    return sendApiResponse(res, 200, result.message, {
+      revokedCount: result.revokedCount,
+    });
   }),
 };

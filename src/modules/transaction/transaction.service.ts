@@ -12,7 +12,19 @@ import logger from "../../config/logger";
 import prisma from "../../config/prisma";
 import { TransactionType } from "../../generated/prisma/client";
 
-function formatTransaction(t: TransactionWithCategory) {
+// Summary format for list endpoints - minimal data
+function formatTransactionSummary(t: TransactionWithCategory) {
+  return {
+    id: t.id,
+    amount: Number(t.amount),
+    type: t.type,
+    date: t.date,
+    categoryName: t.category?.name ?? null,
+  };
+}
+
+// Detailed format for single transaction endpoint - complete data
+function formatTransactionDetail(t: TransactionWithCategory) {
   return {
     id: t.id,
     amount: Number(t.amount),
@@ -56,7 +68,7 @@ export class TransactionService {
       }
     );
     return {
-      transactions: result.data.map(formatTransaction),
+      transactions: result.data.map(formatTransactionSummary),
       meta: result.meta,
     };
   }
@@ -67,7 +79,7 @@ export class TransactionService {
       userId
     );
     if (!transaction) throw new ApiError(404, "Transaction not found");
-    return formatTransaction(transaction);
+    return formatTransactionDetail(transaction);
   }
 
   static async createTransaction(userId: string, data: CreateTransactionInput) {
@@ -90,7 +102,7 @@ export class TransactionService {
       userId,
       transactionId: result.data.id,
     });
-    return formatTransaction(result.data);
+    return formatTransactionDetail(result.data);
   }
 
   static async updateTransaction(
@@ -138,7 +150,7 @@ export class TransactionService {
     if (!result.success) throw new ApiError(result.statusCode, result.message);
 
     logger.info("Transaction updated", { userId, transactionId });
-    return formatTransaction(result.data);
+    return formatTransactionDetail(result.data);
   }
 
   static async deleteTransaction(transactionId: string, userId: string) {

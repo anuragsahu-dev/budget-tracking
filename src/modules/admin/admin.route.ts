@@ -16,6 +16,9 @@ import {
   createPlanPricingSchema,
   updatePlanPricingSchema,
   planPricingIdParamSchema,
+  listSubscriptionsQuerySchema,
+  subscriptionIdParamSchema,
+  updateSubscriptionSchema,
 } from "./admin.validation";
 
 const router = Router();
@@ -119,6 +122,39 @@ router.delete(
   "/pricing/:id",
   validate({ params: planPricingIdParamSchema }),
   AdminController.deletePlanPricing
+);
+
+// ========== SUBSCRIPTION MANAGEMENT ROUTES ==========
+
+router.get(
+  "/subscriptions",
+  validate({ query: listSubscriptionsQuerySchema }),
+  AdminController.getAllSubscriptions
+);
+
+router.get("/subscriptions/stats", AdminController.getSubscriptionStats);
+
+router.get(
+  "/subscriptions/:id",
+  validate({ params: subscriptionIdParamSchema }),
+  AdminController.getSubscriptionById
+);
+
+router.patch(
+  "/subscriptions/:id",
+  validate({
+    params: subscriptionIdParamSchema,
+    body: updateSubscriptionSchema,
+  }),
+  AdminController.updateSubscription
+);
+
+// ========== FORCE LOGOUT ROUTE ==========
+
+router.delete(
+  "/users/:id/sessions",
+  validate({ params: userIdParamSchema }),
+  AdminController.forceLogoutUser
 );
 
 export default router;

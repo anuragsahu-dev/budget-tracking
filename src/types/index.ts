@@ -3,11 +3,7 @@
  */
 
 // Common types used across modules
-export type {
-  CategorySelect,
-  BasePaginationOptions,
-  CommonSortField,
-} from "./common.types";
+export type { CategorySelect } from "./common.types";
 
 // Payment related types
 export type {

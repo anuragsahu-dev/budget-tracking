@@ -10,7 +10,10 @@ import type {
   ListPaymentsQuery,
   CreatePlanPricingInput,
   UpdatePlanPricingInput,
+  ListSubscriptionsQuery,
+  UpdateSubscriptionInput,
 } from "./admin.validation";
+import { SubscriptionStatus } from "../../generated/prisma/client";
 import logger from "../../config/logger";
 import { generateSlug } from "../../utils/slug";
 
@@ -183,10 +186,10 @@ export class AdminService {
    * Get all users with filters and pagination
    */
   static async getAllUsers(query: ListUsersQuery) {
-    const { role, status, search, page, limit, sortBy, sortOrder } = query;
+    const { status, search, page, limit, sortBy, sortOrder } = query;
 
     const result = await AdminRepository.findAllUsers(
-      { role, status, search },
+      { status, search },
       { page, limit, sortBy, sortOrder }
     );
 
@@ -393,5 +396,139 @@ export class AdminService {
     logger.info("Plan pricing deleted", { pricingId });
 
     return { message: "Plan pricing deleted successfully" };
+  }
+
+  // ========== SUBSCRIPTION MANAGEMENT SERVICE ==========
+
+  /**
+   * Get all subscriptions with filters and pagination
+   */
+  static async getAllSubscriptions(query: ListSubscriptionsQuery) {
+    const { status, plan, expiringWithinDays, page, limit, sortBy, sortOrder } =
+      query;
+
+    const result = await AdminRepository.findAllSubscriptions(
+      { status, plan, expiringWithinDays },
+      { page, limit, sortBy, sortOrder }
+    );
+
+    return {
+      subscriptions: result.data,
+      meta: result.meta,
+    };
+  }
+
+  /**
+   * Get subscription by ID
+   */
+  static async getSubscriptionById(subscriptionId: string) {
+    const subscription = await AdminRepository.findSubscriptionById(
+      subscriptionId
+    );
+
+    if (!subscription) {
+      throw new ApiError(404, "Subscription not found");
+    }
+
+    return subscription;
+  }
+
+  /**
+   * Update subscription (extend or change status)
+   */
+  static async updateSubscription(
+    subscriptionId: string,
+    data: UpdateSubscriptionInput
+  ) {
+    const subscription = await AdminRepository.findSubscriptionById(
+      subscriptionId
+    );
+
+    if (!subscription) {
+      throw new ApiError(404, "Subscription not found");
+    }
+
+    const updateData: { status?: SubscriptionStatus; expiresAt?: Date } = {};
+
+    if (data.status) {
+      updateData.status = data.status;
+    }
+
+    if (data.extendDays) {
+      // Extend from current expiry or now, whichever is later
+      const baseDate =
+        subscription.expiresAt > new Date()
+          ? subscription.expiresAt
+          : new Date();
+      updateData.expiresAt = new Date(
+        baseDate.getTime() + data.extendDays * 24 * 60 * 60 * 1000
+      );
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new ApiError(400, "No valid fields to update");
+    }
+
+    const result = await AdminRepository.updateSubscriptionById(
+      subscriptionId,
+      updateData
+    );
+
+    if (!result.success) {
+      throw new ApiError(result.statusCode, result.message);
+    }
+
+    logger.info("Subscription updated by admin", {
+      subscriptionId,
+      changes: updateData,
+    });
+
+    return result.data;
+  }
+
+  /**
+   * Get subscription statistics
+   */
+  static async getSubscriptionStats() {
+    const stats = await AdminRepository.getSubscriptionStats();
+
+    logger.info("Subscription stats retrieved");
+
+    return stats;
+  }
+
+  // ========== FORCE LOGOUT SERVICE ==========
+
+  /**
+   * Force logout user by revoking all sessions
+   */
+  static async forceLogoutUser(userId: string, adminId: string) {
+    // Prevent admin from logging themselves out
+    if (userId === adminId) {
+      throw new ApiError(403, "You cannot force logout yourself");
+    }
+
+    const user = await AdminRepository.findUserById(userId);
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    const result = await AdminRepository.revokeAllUserSessions(userId);
+
+    if (!result.success) {
+      throw new ApiError(result.statusCode, result.message);
+    }
+
+    logger.info("User force logged out", {
+      userId,
+      adminId,
+      revokedSessions: result.data.count,
+    });
+
+    return {
+      message: `Successfully revoked ${result.data.count} session(s)`,
+      revokedCount: result.data.count,
+    };
   }
 }

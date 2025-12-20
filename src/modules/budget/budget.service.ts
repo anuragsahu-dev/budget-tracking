@@ -10,7 +10,25 @@ import type {
 import logger from "../../config/logger";
 import prisma from "../../config/prisma";
 
-function formatBudget(budget: BudgetWithAllocations) {
+// Summary format for list endpoints - minimal data
+function formatBudgetSummary(budget: BudgetWithAllocations) {
+  const allocatedTotal = budget.allocations.reduce(
+    (sum, a) => sum + Number(a.amount),
+    0
+  );
+
+  return {
+    id: budget.id,
+    month: budget.month,
+    year: budget.year,
+    totalLimit: budget.totalLimit ? Number(budget.totalLimit) : null,
+    allocatedTotal,
+    allocationCount: budget.allocations.length,
+  };
+}
+
+// Detailed format for single budget endpoint - complete data
+function formatBudgetDetail(budget: BudgetWithAllocations) {
   const allocations = budget.allocations.map((a) => ({
     id: a.id,
     amount: Number(a.amount),
@@ -43,12 +61,12 @@ export class BudgetService {
       { userId, month: query.month, year: query.year },
       { page: query.page, limit: query.limit }
     );
-    return { budgets: result.data.map(formatBudget), meta: result.meta };
+    return { budgets: result.data.map(formatBudgetSummary), meta: result.meta };
   }
 
   static async getBudgetById(budgetId: string, userId: string) {
     const budget = await verifyBudgetOwnership(budgetId, userId);
-    return formatBudget(budget);
+    return formatBudgetDetail(budget);
   }
 
   static async createBudget(userId: string, data: CreateBudgetInput) {
@@ -75,7 +93,7 @@ export class BudgetService {
     if (!result.success) throw new ApiError(result.statusCode, result.message);
 
     logger.info("Budget created", { userId, budgetId: result.data.id });
-    return formatBudget(result.data);
+    return formatBudgetDetail(result.data);
   }
 
   static async updateBudget(
@@ -97,7 +115,7 @@ export class BudgetService {
     if (!result.success) throw new ApiError(result.statusCode, result.message);
 
     logger.info("Budget updated", { userId, budgetId });
-    return formatBudget(result.data);
+    return formatBudgetDetail(result.data);
   }
 
   static async deleteBudget(budgetId: string, userId: string) {

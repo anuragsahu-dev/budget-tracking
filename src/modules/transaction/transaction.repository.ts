@@ -20,11 +20,8 @@ import type {
 } from "./transaction.types";
 
 // Re-export types for consumers
-export type {
-  TransactionWithCategory,
-  TransactionFilters,
-  TransactionPaginationOptions,
-};
+// Re-export only types used by consumers
+export type { TransactionWithCategory };
 
 // Category select for includes
 const CATEGORY_SELECT = {
@@ -77,13 +74,6 @@ export class TransactionRepository {
       data: transactions,
       meta: createPaginationMeta(total, page, limit),
     };
-  }
-
-  static async findById(id: string): Promise<TransactionWithCategory | null> {
-    return prisma.transaction.findUnique({
-      where: { id },
-      include: { category: { select: CATEGORY_SELECT } },
-    });
   }
 
   static async findByIdAndUser(

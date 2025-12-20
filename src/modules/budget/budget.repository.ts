@@ -21,13 +21,8 @@ import type {
   AllocationWithCategory,
 } from "./budget.types";
 
-// Re-export types for consumers
-export type {
-  BudgetWithAllocations,
-  BudgetFilters,
-  BudgetPaginationOptions,
-  AllocationWithCategory,
-};
+// Re-export only types used by consumers
+export type { BudgetWithAllocations };
 
 // Category select constant
 const CATEGORY_SELECT = {

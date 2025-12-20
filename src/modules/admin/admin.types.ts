@@ -3,7 +3,9 @@ import {
   UserStatus,
   PaymentStatus,
   SubscriptionPlan,
+  SubscriptionStatus,
   Payment,
+  Subscription,
 } from "../../generated/prisma/client";
 
 export interface SafeUser {
@@ -20,7 +22,6 @@ export interface SafeUser {
 }
 
 export interface UserFilters {
-  role?: UserRole;
   status?: UserStatus;
   search?: string;
 }
@@ -43,6 +44,22 @@ export interface PaymentFilters {
 }
 
 export type PaymentWithUser = Payment & {
+  user: {
+    id: string;
+    email: string;
+    fullName: string | null;
+  };
+};
+
+// ========== SUBSCRIPTION TYPES ==========
+
+export interface SubscriptionFilters {
+  status?: SubscriptionStatus;
+  plan?: SubscriptionPlan;
+  expiringWithinDays?: number;
+}
+
+export type SubscriptionWithUser = Subscription & {
   user: {
     id: string;
     email: string;
