@@ -38,7 +38,10 @@ export class AdminService {
   /**
    * Create a new system category
    */
-  static async createSystemCategory(data: CreateSystemCategoryInput) {
+  static async createSystemCategory(
+    adminId: string,
+    data: CreateSystemCategoryInput
+  ) {
     const slug = generateSlug(data.name);
 
     // Check if slug already exists
@@ -61,6 +64,7 @@ export class AdminService {
     }
 
     logger.info("System category created", {
+      adminId,
       categoryId: result.data.id,
       name: result.data.name,
       slug: result.data.slug,
@@ -79,6 +83,7 @@ export class AdminService {
    * Update a system category
    */
   static async updateSystemCategory(
+    adminId: string,
     categoryId: string,
     data: UpdateSystemCategoryInput
   ) {
@@ -128,7 +133,11 @@ export class AdminService {
       throw new ApiError(result.statusCode, result.message);
     }
 
-    logger.info("System category updated", { categoryId });
+    logger.info("System category updated", {
+      adminId,
+      categoryId,
+      changes: updateData,
+    });
 
     return {
       id: result.data.id,
@@ -142,7 +151,7 @@ export class AdminService {
   /**
    * Delete a system category
    */
-  static async deleteSystemCategory(categoryId: string) {
+  static async deleteSystemCategory(adminId: string, categoryId: string) {
     const category = await AdminRepository.findSystemCategoryById(categoryId);
 
     if (!category) {
@@ -175,7 +184,12 @@ export class AdminService {
       throw new ApiError(result.statusCode, result.message);
     }
 
-    logger.info("System category deleted", { categoryId });
+    logger.info("System category deleted", {
+      adminId,
+      categoryId,
+      name: category.name,
+      slug: category.slug,
+    });
 
     return { message: "System category deleted successfully" };
   }
@@ -222,6 +236,7 @@ export class AdminService {
   ) {
     // Prevent admin from changing their own status
     if (userId === adminId) {
+      logger.warn("Admin attempted to change own status", { adminId });
       throw new ApiError(403, "You cannot change your own status");
     }
 
@@ -255,15 +270,10 @@ export class AdminService {
 
   /**
    * Get platform statistics
+   * Returns overview (all-time) and period (date-filtered) stats
    */
   static async getStats(query: StatsQuery) {
-    const { from, to } = query;
-
-    const stats = await AdminRepository.getStats(from, to);
-
-    logger.info("Admin stats retrieved", { from, to });
-
-    return stats;
+    return AdminRepository.getStats(query.from, query.to);
   }
 
   // ========== PAYMENT MANAGEMENT SERVICE ==========
@@ -303,13 +313,7 @@ export class AdminService {
    * Get payment statistics
    */
   static async getPaymentStats(query: StatsQuery) {
-    const { from, to } = query;
-
-    const stats = await AdminRepository.getPaymentStats(from, to);
-
-    logger.info("Payment stats retrieved", { from, to });
-
-    return stats;
+    return AdminRepository.getPaymentStats(query.from, query.to);
   }
 
   // ========== PLAN PRICING SERVICE ==========
@@ -333,7 +337,10 @@ export class AdminService {
   /**
    * Create plan pricing
    */
-  static async createPlanPricing(data: CreatePlanPricingInput) {
+  static async createPlanPricing(
+    adminId: string,
+    data: CreatePlanPricingInput
+  ) {
     const result = await PlanPricingRepository.create(data);
 
     if (!result.success) {
@@ -341,6 +348,7 @@ export class AdminService {
     }
 
     logger.info("Plan pricing created", {
+      adminId,
       pricingId: result.data.id,
       plan: result.data.plan,
       currency: result.data.currency,
@@ -353,6 +361,7 @@ export class AdminService {
    * Update plan pricing
    */
   static async updatePlanPricing(
+    adminId: string,
     pricingId: string,
     data: UpdatePlanPricingInput
   ) {
@@ -372,7 +381,13 @@ export class AdminService {
       throw new ApiError(result.statusCode, result.message);
     }
 
-    logger.info("Plan pricing updated", { pricingId });
+    logger.info("Plan pricing updated", {
+      adminId,
+      pricingId,
+      plan: pricing.plan,
+      currency: pricing.currency,
+      changes: data,
+    });
 
     return result.data;
   }
@@ -380,7 +395,7 @@ export class AdminService {
   /**
    * Delete plan pricing
    */
-  static async deletePlanPricing(pricingId: string) {
+  static async deletePlanPricing(adminId: string, pricingId: string) {
     const pricing = await PlanPricingRepository.findById(pricingId);
 
     if (!pricing) {
@@ -393,7 +408,12 @@ export class AdminService {
       throw new ApiError(result.statusCode, result.message);
     }
 
-    logger.info("Plan pricing deleted", { pricingId });
+    logger.info("Plan pricing deleted", {
+      adminId,
+      pricingId,
+      plan: pricing.plan,
+      currency: pricing.currency,
+    });
 
     return { message: "Plan pricing deleted successfully" };
   }
@@ -437,6 +457,7 @@ export class AdminService {
    * Update subscription (extend or change status)
    */
   static async updateSubscription(
+    adminId: string,
     subscriptionId: string,
     data: UpdateSubscriptionInput
   ) {
@@ -479,7 +500,12 @@ export class AdminService {
     }
 
     logger.info("Subscription updated by admin", {
+      adminId,
       subscriptionId,
+      userId: subscription.userId,
+      plan: subscription.plan,
+      previousStatus: subscription.status,
+      previousExpiresAt: subscription.expiresAt,
       changes: updateData,
     });
 
@@ -490,11 +516,7 @@ export class AdminService {
    * Get subscription statistics
    */
   static async getSubscriptionStats() {
-    const stats = await AdminRepository.getSubscriptionStats();
-
-    logger.info("Subscription stats retrieved");
-
-    return stats;
+    return AdminRepository.getSubscriptionStats();
   }
 
   // ========== FORCE LOGOUT SERVICE ==========
@@ -505,6 +527,7 @@ export class AdminService {
   static async forceLogoutUser(userId: string, adminId: string) {
     // Prevent admin from logging themselves out
     if (userId === adminId) {
+      logger.warn("Admin attempted to force logout self", { adminId });
       throw new ApiError(403, "You cannot force logout yourself");
     }
 

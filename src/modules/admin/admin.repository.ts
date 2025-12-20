@@ -24,21 +24,31 @@ import {
 import { CategoryRepository } from "../category/category.repository";
 import type {
   SafeUser,
+  UserSummary,
   UserFilters,
   PaginationOptions,
   PaymentFilters,
   SubscriptionFilters,
   SubscriptionWithUser,
+  PlatformStats,
 } from "./admin.types";
 
-// Re-export types for consumers
-export type { SafeUser, UserFilters, PaginationOptions };
+// Minimal fields for list view
+const USER_SUMMARY_SELECT = {
+  id: true,
+  email: true,
+  fullName: true,
+  avatarUrl: true,
+  status: true,
+  createdAt: true,
+} as const;
 
-// Safe user select fields
+// Full fields for detail view
 const SAFE_USER_SELECT = {
   id: true,
   email: true,
   fullName: true,
+  avatarUrl: true,
   isEmailVerified: true,
   googleId: true,
   currency: true,
@@ -141,7 +151,7 @@ export class AdminRepository {
   static async findAllUsers(
     filters: UserFilters,
     pagination: PaginationOptions
-  ): Promise<PaginatedResult<SafeUser>> {
+  ): Promise<PaginatedResult<UserSummary>> {
     const { status, search } = filters;
     const { page, limit, sortBy, sortOrder } = pagination;
 
@@ -162,7 +172,7 @@ export class AdminRepository {
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where: whereClause,
-        select: SAFE_USER_SELECT,
+        select: USER_SUMMARY_SELECT,
         orderBy: { [sortBy]: sortOrder },
         skip,
         take: limit,
@@ -171,7 +181,7 @@ export class AdminRepository {
     ]);
 
     return {
-      data: users as SafeUser[],
+      data: users as UserSummary[],
       meta: createPaginationMeta(total, page, limit),
     };
   }
@@ -207,27 +217,59 @@ export class AdminRepository {
 
   // ========== STATISTICS METHODS ==========
 
-  static async getStats(from?: Date, to?: Date) {
+  static async getStats(from?: Date, to?: Date): Promise<PlatformStats> {
     const dateFilter =
       from || to
         ? { createdAt: { ...(from && { gte: from }), ...(to && { lte: to }) } }
         : {};
 
-    const [totalUsers, activeUsers, newUsers, totalTransactions, totalBudgets] =
-      await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
-        prisma.user.count({ where: dateFilter }),
-        prisma.transaction.count({ where: dateFilter }),
-        prisma.budget.count({ where: dateFilter }),
-      ]);
-
-    return {
+    // All queries in parallel for performance
+    const [
+      // Overview stats (all-time, no date filter)
       totalUsers,
       activeUsers,
-      newUsers,
+      suspendedUsers,
       totalTransactions,
       totalBudgets,
+      totalSystemCategories,
+      // Period stats (date filtered)
+      newUsers,
+      newTransactions,
+      newBudgets,
+    ] = await Promise.all([
+      // Overview - All time
+      prisma.user.count({ where: { role: UserRole.USER } }),
+      prisma.user.count({
+        where: { role: UserRole.USER, status: UserStatus.ACTIVE },
+      }),
+      prisma.user.count({
+        where: { role: UserRole.USER, status: UserStatus.SUSPENDED },
+      }),
+      prisma.transaction.count(),
+      prisma.budget.count(),
+      prisma.category.count({ where: { userId: null } }),
+      // Period - With date filter (or all-time if no dates provided)
+      prisma.user.count({ where: { role: UserRole.USER, ...dateFilter } }),
+      prisma.transaction.count({ where: dateFilter }),
+      prisma.budget.count({ where: dateFilter }),
+    ]);
+
+    return {
+      overview: {
+        totalUsers,
+        activeUsers,
+        suspendedUsers,
+        totalTransactions,
+        totalBudgets,
+        totalSystemCategories,
+      },
+      period: {
+        from: from ?? null,
+        to: to ?? null,
+        newUsers,
+        newTransactions,
+        newBudgets,
+      },
     };
   }
 
@@ -349,15 +391,18 @@ export class AdminRepository {
     const { page, limit, sortBy, sortOrder } = pagination;
 
     const whereClause: Prisma.SubscriptionWhereInput = {
-      ...(status && { status }),
       ...(plan && { plan }),
-      ...(expiringWithinDays && {
-        expiresAt: {
-          lte: new Date(Date.now() + expiringWithinDays * 24 * 60 * 60 * 1000),
-          gte: new Date(),
-        },
-        status: SubscriptionStatus.ACTIVE,
-      }),
+      ...(expiringWithinDays
+        ? {
+            status: SubscriptionStatus.ACTIVE,
+            expiresAt: {
+              lte: new Date(
+                Date.now() + expiringWithinDays * 24 * 60 * 60 * 1000
+              ),
+              gte: new Date(),
+            },
+          }
+        : status && { status }),
     };
 
     const skip = (page - 1) * limit;
@@ -384,7 +429,7 @@ export class AdminRepository {
   }
 
   /**
-   * Find subscription by ID with user details
+   * Find subscription by ID with user and payment details
    */
   static async findSubscriptionById(id: string) {
     return prisma.subscription.findUnique({
@@ -394,6 +439,15 @@ export class AdminRepository {
           select: { id: true, email: true, fullName: true },
         },
         payments: {
+          select: {
+            id: true,
+            plan: true,
+            amount: true,
+            currency: true,
+            status: true,
+            paidAt: true,
+            createdAt: true,
+          },
           orderBy: { createdAt: "desc" },
           take: 5,
         },
@@ -432,6 +486,7 @@ export class AdminRepository {
     const [
       totalSubscriptions,
       activeSubscriptions,
+      pendingSubscriptions,
       expiredSubscriptions,
       cancelledSubscriptions,
       monthlySubscriptions,
@@ -441,6 +496,9 @@ export class AdminRepository {
       prisma.subscription.count(),
       prisma.subscription.count({
         where: { status: SubscriptionStatus.ACTIVE },
+      }),
+      prisma.subscription.count({
+        where: { status: SubscriptionStatus.PENDING },
       }),
       prisma.subscription.count({
         where: { status: SubscriptionStatus.EXPIRED },
@@ -474,6 +532,7 @@ export class AdminRepository {
     return {
       totalSubscriptions,
       activeSubscriptions,
+      pendingSubscriptions,
       expiredSubscriptions,
       cancelledSubscriptions,
       monthlySubscriptions,

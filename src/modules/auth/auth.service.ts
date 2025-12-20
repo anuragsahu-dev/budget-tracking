@@ -18,7 +18,7 @@ export class AuthService {
       });
 
       if (!result.success) {
-        throw new ApiError(result.statusCode, result.message, result.error);
+        throw new ApiError(result.statusCode, result.message);
       }
 
       user = result.data;
@@ -55,11 +55,7 @@ export class AuthService {
     });
 
     if (!updateResult.success) {
-      throw new ApiError(
-        updateResult.statusCode,
-        "failed to verify email",
-        updateResult.error
-      );
+      throw new ApiError(updateResult.statusCode, "failed to verify email");
     }
 
     const updatedUser = updateResult.data;
@@ -91,11 +87,7 @@ export class AuthService {
     });
 
     if (!updateResult.success) {
-      throw new ApiError(
-        updateResult.statusCode,
-        "failed to update name",
-        updateResult.error
-      );
+      throw new ApiError(updateResult.statusCode, "failed to update name");
     }
 
     const updatedUser = updateResult.data;

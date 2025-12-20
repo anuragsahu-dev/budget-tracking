@@ -40,9 +40,10 @@ export const AdminController = {
   }),
 
   createSystemCategory: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const data = getValidatedBody<CreateSystemCategoryInput>(req);
 
-    const category = await AdminService.createSystemCategory(data);
+    const category = await AdminService.createSystemCategory(adminId, data);
 
     return sendApiResponse(
       res,
@@ -53,10 +54,11 @@ export const AdminController = {
   }),
 
   updateSystemCategory: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const { id } = getValidatedParams<SystemCategoryIdParam>(req);
     const data = getValidatedBody<UpdateSystemCategoryInput>(req);
 
-    const category = await AdminService.updateSystemCategory(id, data);
+    const category = await AdminService.updateSystemCategory(adminId, id, data);
 
     return sendApiResponse(
       res,
@@ -67,9 +69,10 @@ export const AdminController = {
   }),
 
   deleteSystemCategory: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const { id } = getValidatedParams<SystemCategoryIdParam>(req);
 
-    const result = await AdminService.deleteSystemCategory(id);
+    const result = await AdminService.deleteSystemCategory(adminId, id);
 
     return sendApiResponse(res, 200, result.message, null);
   }),
@@ -169,9 +172,10 @@ export const AdminController = {
   }),
 
   createPlanPricing: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const data = getValidatedBody<CreatePlanPricingInput>(req);
 
-    const pricing = await AdminService.createPlanPricing(data);
+    const pricing = await AdminService.createPlanPricing(adminId, data);
 
     return sendApiResponse(
       res,
@@ -182,10 +186,11 @@ export const AdminController = {
   }),
 
   updatePlanPricing: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const { id } = getValidatedParams<PlanPricingIdParam>(req);
     const data = getValidatedBody<UpdatePlanPricingInput>(req);
 
-    const pricing = await AdminService.updatePlanPricing(id, data);
+    const pricing = await AdminService.updatePlanPricing(adminId, id, data);
 
     return sendApiResponse(
       res,
@@ -196,9 +201,10 @@ export const AdminController = {
   }),
 
   deletePlanPricing: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const { id } = getValidatedParams<PlanPricingIdParam>(req);
 
-    const result = await AdminService.deletePlanPricing(id);
+    const result = await AdminService.deletePlanPricing(adminId, id);
 
     return sendApiResponse(res, 200, result.message, null);
   }),
@@ -233,10 +239,15 @@ export const AdminController = {
   }),
 
   updateSubscription: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const { id } = getValidatedParams<SubscriptionIdParam>(req);
     const data = getValidatedBody<UpdateSubscriptionInput>(req);
 
-    const subscription = await AdminService.updateSubscription(id, data);
+    const subscription = await AdminService.updateSubscription(
+      adminId,
+      id,
+      data
+    );
 
     return sendApiResponse(
       res,

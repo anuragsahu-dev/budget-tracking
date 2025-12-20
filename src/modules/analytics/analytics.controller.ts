@@ -84,7 +84,7 @@ export const AnalyticsController = {
   getBudgetComparison: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;
     const query = getValidatedQuery<MonthlySummaryQuery>(req);
-
+ 
     const comparison = await AnalyticsService.getBudgetComparison(
       userId,
       query.month,

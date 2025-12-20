@@ -8,10 +8,22 @@ import {
   Subscription,
 } from "../../generated/prisma/client";
 
+// Summary for list view (minimal data)
+export interface UserSummary {
+  id: string;
+  email: string;
+  fullName: string | null;
+  avatarUrl: string;
+  status: UserStatus;
+  createdAt: Date;
+}
+
+// Full details for single user view
 export interface SafeUser {
   id: string;
   email: string;
   fullName: string | null;
+  avatarUrl: string;
   isEmailVerified: boolean;
   googleId: string | null;
   currency: string;
@@ -66,3 +78,27 @@ export type SubscriptionWithUser = Subscription & {
     fullName: string | null;
   };
 };
+
+// ========== PLATFORM STATS TYPES ==========
+
+export interface PlatformStatsOverview {
+  totalUsers: number;
+  activeUsers: number;
+  suspendedUsers: number;
+  totalTransactions: number;
+  totalBudgets: number;
+  totalSystemCategories: number;
+}
+
+export interface PlatformStatsPeriod {
+  from: Date | null;
+  to: Date | null;
+  newUsers: number;
+  newTransactions: number;
+  newBudgets: number;
+}
+
+export interface PlatformStats {
+  overview: PlatformStatsOverview;
+  period: PlatformStatsPeriod;
+}
