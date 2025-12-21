@@ -8,6 +8,7 @@ export {
   addEmailJob,
   queueOtpEmail,
   queuePaymentSuccessEmail,
+  queueSubscriptionExpiringEmail,
 } from "./email.queue";
 
 export {

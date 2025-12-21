@@ -77,3 +77,28 @@ export async function queuePaymentSuccessEmail(
     expiresAt: expiresAt.toISOString(),
   });
 }
+
+/**
+ * Add subscription expiring reminder email job to queue
+ */
+export async function queueSubscriptionExpiringEmail(
+  email: string,
+  userName: string,
+  plan: string,
+  expiresAt: Date
+): Promise<void> {
+  const now = new Date();
+  const daysRemaining = Math.ceil(
+    (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  await addEmailJob({
+    type: "SUBSCRIPTION_EXPIRING",
+    to: email,
+    subject: `Your Subscription Expires in ${daysRemaining} Days`,
+    userName,
+    plan,
+    expiresAt: expiresAt.toISOString(),
+    daysRemaining,
+  });
+}

@@ -6,6 +6,7 @@ import type {
   EmailJobData,
   OtpEmailJobData,
   PaymentSuccessJobData,
+  SubscriptionExpiringJobData,
 } from "../types";
 
 const QUEUE_NAME = "email";
@@ -85,6 +86,49 @@ function generatePaymentSuccessContent(data: PaymentSuccessJobData) {
 }
 
 /**
+ * Generate subscription expiring reminder email content
+ */
+function generateSubscriptionExpiringContent(
+  data: SubscriptionExpiringJobData
+) {
+  const expiryDate = new Date(data.expiresAt).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return {
+    body: {
+      name: data.userName,
+      intro: [
+        `Your ${data.plan.replace("_", " ")} subscription is expiring soon!`,
+        `You have ${data.daysRemaining} days remaining until your subscription ends.`,
+      ],
+      table: {
+        data: [
+          { Item: "Current Plan", Details: data.plan.replace("_", " ") },
+          { Item: "Expires On", Details: expiryDate },
+          { Item: "Days Remaining", Details: `${data.daysRemaining} days` },
+        ],
+      },
+      action: {
+        instructions:
+          "To continue enjoying PRO features without interruption, please renew your subscription:",
+        button: {
+          color: "#22BC66",
+          text: "Renew Now",
+          link: "https://yourapp.com/subscription", // Replace with actual URL
+        },
+      },
+      outro: [
+        "If you don't renew, your account will be downgraded to the free plan.",
+        "Thank you for being a valued subscriber!",
+      ],
+    },
+  };
+}
+
+/**
  * Process email job based on type
  */
 async function processEmailJob(job: Job<EmailJobData>): Promise<void> {
@@ -105,8 +149,15 @@ async function processEmailJob(job: Job<EmailJobData>): Promise<void> {
     case "PAYMENT_SUCCESS":
       mailgenContent = generatePaymentSuccessContent(data);
       break;
-    default:
-      throw new Error(`Unknown email type: ${(data as EmailJobData).type}`);
+    case "SUBSCRIPTION_EXPIRING":
+      mailgenContent = generateSubscriptionExpiringContent(data);
+      break;
+    default: {
+      const _exhaustiveCheck: never = data;
+      throw new Error(
+        `Unknown email type: ${(_exhaustiveCheck as EmailJobData).type}`
+      );
+    }
   }
 
   await sendEmail({

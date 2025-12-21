@@ -5,6 +5,7 @@ import redis from "../../config/redis";
 import { verifyJWT } from "../../middlewares/auth.middleware";
 import { requireRole } from "../../middlewares/role.middleware";
 import { UserRole } from "../../generated/prisma/client";
+import { getScheduledJobsStatus } from "../../jobs/queues/scheduler.queue";
 
 const router = Router();
 
@@ -19,12 +20,28 @@ const router = Router();
  * For full diagnostics, use GET /api/v1/admin/health (admin only)
  */
 
+interface SchedulerInfo {
+  id: string | null | undefined;
+  name: string;
+  every: number | undefined;
+  next: string | null;
+}
+
 interface HealthStatus {
   status: "healthy" | "unhealthy" | "degraded";
   timestamp: string;
   uptime?: number;
   checks?: Record<string, ServiceCheck>;
   system?: SystemInfo;
+  schedulers?: {
+    count: number;
+    jobs: SchedulerInfo[];
+    queues: {
+      waiting: number;
+      active: number;
+      failed: number;
+    };
+  };
 }
 
 interface ServiceCheck {
@@ -118,7 +135,7 @@ router.get("/ready", async (_req: Request, res: Response) => {
 // ============================================================
 // ADMIN ONLY: Full System Diagnostics
 // Used by: Admin dashboard, debugging
-// Includes: All service checks, memory, uptime, versions
+// Includes: All service checks, memory, uptime, versions, schedulers
 // ============================================================
 export async function getFullHealthStatus(): Promise<HealthStatus> {
   const checks: Record<string, ServiceCheck> = {};
@@ -173,12 +190,20 @@ export async function getFullHealthStatus(): Promise<HealthStatus> {
     },
   };
 
+  // Get scheduler status
+  const schedulerStatus = await getScheduledJobsStatus();
+
   return {
     status: overallStatus,
     timestamp: new Date().toISOString(),
     uptime: Math.round(process.uptime()),
     checks,
     system,
+    schedulers: {
+      count: schedulerStatus.schedulers.length,
+      jobs: schedulerStatus.schedulers,
+      queues: schedulerStatus.counts,
+    },
   };
 }
 
