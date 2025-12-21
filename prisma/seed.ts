@@ -32,90 +32,91 @@ function randomElement<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function generateTransactionDescription(
-  type: TransactionType,
-  categorySlug: string
-): string {
-  const descriptions: Record<string, string[]> = {
-    "food-drinks": [
-      "Lunch at restaurant",
-      "Grocery shopping",
-      "Coffee at Starbucks",
-      "Dinner with friends",
-      "Weekend brunch",
-      "Snacks & beverages",
-    ],
-    transportation: [
-      "Uber ride to office",
-      "Metro card recharge",
-      "Fuel for car",
-      "Ola cab",
-      "Bus ticket",
-      "Parking fees",
-    ],
-    entertainment: [
-      "Netflix subscription",
-      "Movie tickets",
-      "Concert tickets",
-      "Gaming purchase",
-      "Spotify premium",
-      "YouTube Premium",
-    ],
-    shopping: [
-      "Amazon purchase",
-      "Clothing shopping",
-      "Electronics",
-      "Home decor",
-      "Flipkart order",
-      "Myntra shopping",
-    ],
-    "bills-utilities": [
-      "Electricity bill",
-      "Mobile recharge",
-      "Internet bill",
-      "Water bill",
-      "Gas bill",
-      "DTH recharge",
-    ],
-    health: [
-      "Doctor consultation",
-      "Medicine purchase",
-      "Gym membership",
-      "Health checkup",
-      "Pharmacy",
-      "Supplements",
-    ],
-    salary: [
-      "Monthly salary",
-      "Bonus received",
-      "Freelance payment",
-      "Project payment",
-      "Overtime pay",
-    ],
-    investment: [
-      "Mutual fund SIP",
-      "Fixed deposit interest",
-      "Dividend received",
-      "Stock sale profit",
-      "PPF contribution",
-    ],
-    gifts: [
-      "Birthday gift received",
-      "Wedding gift",
-      "Festival bonus",
-      "Cash gift from family",
-    ],
-    other: [
-      "Miscellaneous expense",
-      "Cash withdrawal",
-      "ATM transaction",
-      "Unknown",
-    ],
-  };
+// Description generators based on category slug
+const EXPENSE_DESCRIPTIONS: Record<string, string[]> = {
+  "food-drinks": [
+    "Lunch at restaurant",
+    "Grocery shopping",
+    "Coffee at Starbucks",
+    "Dinner with friends",
+    "Weekend brunch",
+    "Snacks & beverages",
+  ],
+  transportation: [
+    "Uber ride to office",
+    "Metro card recharge",
+    "Fuel for car",
+    "Ola cab",
+    "Bus ticket",
+    "Parking fees",
+  ],
+  entertainment: [
+    "Netflix subscription",
+    "Movie tickets",
+    "Concert tickets",
+    "Gaming purchase",
+    "Spotify premium",
+    "YouTube Premium",
+  ],
+  shopping: [
+    "Amazon purchase",
+    "Clothing shopping",
+    "Electronics",
+    "Home decor",
+    "Flipkart order",
+    "Myntra shopping",
+  ],
+  "bills-utilities": [
+    "Electricity bill",
+    "Mobile recharge",
+    "Internet bill",
+    "Water bill",
+    "Gas bill",
+    "DTH recharge",
+  ],
+  health: [
+    "Doctor consultation",
+    "Medicine purchase",
+    "Gym membership",
+    "Health checkup",
+    "Pharmacy",
+    "Supplements",
+  ],
+  other: ["Miscellaneous expense", "Cash withdrawal", "ATM transaction"],
+};
 
-  const categoryDescriptions =
-    descriptions[categorySlug] || descriptions["other"];
-  return randomElement(categoryDescriptions);
+const INCOME_DESCRIPTIONS: Record<string, string[]> = {
+  salary: [
+    "Monthly salary",
+    "Bonus received",
+    "Freelance payment",
+    "Project payment",
+    "Overtime pay",
+  ],
+  investment: [
+    "Mutual fund SIP return",
+    "Fixed deposit interest",
+    "Dividend received",
+    "Stock sale profit",
+    "PPF interest",
+  ],
+  gifts: [
+    "Birthday gift received",
+    "Wedding gift",
+    "Festival bonus",
+    "Cash gift from family",
+  ],
+};
+
+function getRandomDescription(
+  categorySlug: string,
+  isExpense: boolean
+): string {
+  const descriptions = isExpense
+    ? EXPENSE_DESCRIPTIONS[categorySlug] || EXPENSE_DESCRIPTIONS["other"]
+    : INCOME_DESCRIPTIONS[categorySlug] || ["Income received"];
+
+  return randomElement(descriptions);
 }
 
 // ============================================================
@@ -248,7 +249,16 @@ async function main() {
   // ============================================================
   console.log("👥 Seeding test users...");
 
-  const testUsers = [
+  interface TestUserData {
+    email: string;
+    fullName: string;
+    status: UserStatus;
+    currency: string;
+    hasSubscription: boolean;
+    subscriptionPlan?: SubscriptionPlan;
+  }
+
+  const testUsers: TestUserData[] = [
     {
       email: "john@example.com",
       fullName: "John Doe",
@@ -295,13 +305,15 @@ async function main() {
     },
   ];
 
-  const createdUsers: Array<{
+  interface CreatedUser {
     id: string;
     email: string;
     hasSubscription: boolean;
     subscriptionPlan?: SubscriptionPlan;
     currency: string;
-  }> = [];
+  }
+
+  const createdUsers: CreatedUser[] = [];
 
   for (const userData of testUsers) {
     const user = await prisma.user.upsert({
@@ -373,8 +385,8 @@ async function main() {
           amount: amount,
           currency: proUser.currency,
           status: PaymentStatus.COMPLETED,
-          providerOrderId: `order_test_${proUser.id.slice(0, 8)}`,
-          providerPaymentId: `pay_test_${proUser.id.slice(0, 8)}`,
+          providerOrderId: `order_test_${subscription.id.slice(0, 8)}_${proUser.id.slice(0, 8)}`,
+          providerPaymentId: `pay_test_${subscription.id.slice(0, 8)}_${proUser.id.slice(0, 8)}`,
           paidAt: new Date(),
         },
       });
@@ -392,15 +404,22 @@ async function main() {
     where: { userId: null },
   });
 
+  const incomeSlugs = ["salary", "investment", "gifts"];
   const incomeCategories = categories.filter((c) =>
-    ["salary", "investment", "gifts"].includes(c.slug)
+    incomeSlugs.includes(c.slug)
   );
   const expenseCategories = categories.filter(
-    (c) => !["salary", "investment", "gifts"].includes(c.slug)
+    (c) => !incomeSlugs.includes(c.slug)
   );
 
-  const activeUsers = createdUsers.filter(
-    (u) => !["suspended@example.com", "charlie@example.com"].includes(u.email)
+  const activeEmails = [
+    "john@example.com",
+    "jane@example.com",
+    "bob@example.com",
+    "alice@example.com",
+  ];
+  const activeUsers = createdUsers.filter((u) =>
+    activeEmails.includes(u.email)
   );
 
   let totalTransactions = 0;
@@ -436,7 +455,7 @@ async function main() {
           categoryId: category.id,
           type,
           amount,
-          description: generateTransactionDescription(type, category.slug),
+          description: getRandomDescription(category.slug, isExpense),
           date: randomDate(threeMonthsAgo, new Date()),
         },
       });
@@ -510,6 +529,7 @@ async function main() {
   ];
 
   let totalCustomCategories = 0;
+  // Add custom categories for first 2 active users
   for (const user of activeUsers.slice(0, 2)) {
     for (const cat of customCategoryData) {
       const existing = await prisma.category.findFirst({
