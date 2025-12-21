@@ -11,24 +11,54 @@ import {
 
 const router = Router();
 
-// All analytics routes require authentication
 router.use(verifyJWT);
 
 /**
- * @route   GET /api/v1/analytics/dashboard
- * @desc    Get dashboard overview (combined analytics)
- * @access  Private (FREE + PRO with different data)
+ * @swagger
+ * /analytics/dashboard:
+ *   get:
+ *     summary: Get dashboard overview
+ *     tags: [Analytics]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     description: Combined analytics for dashboard. FREE users get limited data.
+ *     responses:
+ *       200:
+ *         description: Dashboard data fetched
+ *       401:
+ *         description: Authentication required
  */
 router.get("/dashboard", AnalyticsController.getDashboardOverview);
 
 /**
- * @route   GET /api/v1/analytics/monthly
- * @desc    Get monthly income/expense summary
- * @access  Private
- *          FREE: Current month only
- *          PRO: Any month/year
- * @query   month - 1-12 (optional, PRO only)
- * @query   year - 2000-2100 (optional, PRO only)
+ * @swagger
+ * /analytics/monthly:
+ *   get:
+ *     summary: Get monthly summary
+ *     tags: [Analytics]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     description: FREE users get current month only. PRO can query any month.
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 12
+ *         description: PRO only
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *         description: PRO only
+ *     responses:
+ *       200:
+ *         description: Monthly summary fetched
+ *       401:
+ *         description: Authentication required
  */
 router.get(
   "/monthly",
@@ -37,10 +67,27 @@ router.get(
 );
 
 /**
- * @route   GET /api/v1/analytics/yearly
- * @desc    Get yearly summary with monthly breakdown
- * @access  Private (PRO ONLY)
- * @query   year - 2000-2100 (optional, defaults to current year)
+ * @swagger
+ * /analytics/yearly:
+ *   get:
+ *     summary: Get yearly summary
+ *     tags: [Analytics]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     description: PRO users only
+ *     parameters:
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Yearly summary with monthly breakdown
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: PRO subscription required
  */
 router.get(
   "/yearly",
@@ -49,14 +96,34 @@ router.get(
 );
 
 /**
- * @route   GET /api/v1/analytics/categories
- * @desc    Get spending/income by category
- * @access  Private
- *          FREE: Current month, top 5 categories
- *          PRO: Any month/year, all categories
- * @query   month - 1-12 (optional, PRO only)
- * @query   year - 2000-2100 (optional, PRO only)
- * @query   type - "INCOME" | "EXPENSE" (optional)
+ * @swagger
+ * /analytics/categories:
+ *   get:
+ *     summary: Get spending by category
+ *     tags: [Analytics]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     description: FREE users get top 5 categories. PRO gets all.
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [INCOME, EXPENSE]
+ *     responses:
+ *       200:
+ *         description: Category summary fetched
+ *       401:
+ *         description: Authentication required
  */
 router.get(
   "/categories",
@@ -65,10 +132,30 @@ router.get(
 );
 
 /**
- * @route   GET /api/v1/analytics/trends
- * @desc    Get spending trends over multiple months
- * @access  Private (PRO ONLY)
- * @query   months - 3-12 (default: 6)
+ * @swagger
+ * /analytics/trends:
+ *   get:
+ *     summary: Get spending trends
+ *     tags: [Analytics]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     description: PRO users only
+ *     parameters:
+ *       - in: query
+ *         name: months
+ *         schema:
+ *           type: integer
+ *           minimum: 3
+ *           maximum: 12
+ *           default: 6
+ *     responses:
+ *       200:
+ *         description: Trends data fetched
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: PRO subscription required
  */
 router.get(
   "/trends",
@@ -77,11 +164,31 @@ router.get(
 );
 
 /**
- * @route   GET /api/v1/analytics/budget-comparison
- * @desc    Get budget vs actual spending comparison
- * @access  Private (PRO ONLY)
- * @query   month - 1-12 (optional, defaults to current month)
- * @query   year - 2000-2100 (optional, defaults to current year)
+ * @swagger
+ * /analytics/budget-comparison:
+ *   get:
+ *     summary: Get budget vs actual comparison
+ *     tags: [Analytics]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     description: PRO users only
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Budget comparison fetched
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: PRO subscription required
  */
 router.get(
   "/budget-comparison",

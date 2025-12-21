@@ -9,6 +9,7 @@ export class ApiError extends Error {
   public readonly status: "fail" | "error";
   public readonly isOperational: boolean;
   public readonly errors: (string | object)[];
+  public readonly success: boolean;
 
   constructor(
     statusCode: number,
@@ -19,6 +20,7 @@ export class ApiError extends Error {
     super(message);
     this.statusCode = statusCode;
     this.status = statusCode >= 400 && statusCode < 500 ? "fail" : "error";
+    this.success = false; // Errors always have success: false
     this.isOperational = isOperational;
 
     if (
@@ -42,6 +44,7 @@ export class ApiError extends Error {
 
 // sending consistent response
 interface ErrorResponse {
+  success: boolean;
   status: "fail" | "error";
   message: string;
   errors: (string | object)[];
@@ -80,12 +83,14 @@ export const globalErrorHandler = (
       message: error.message,
       errors: error.errors,
       stack: error.stack,
+      success: error.success,
     };
     res.status(statusCode).json(response);
   } else {
     // Operational, trusted error: send message to client
     if (error.isOperational) {
       const response: ErrorResponse = {
+        success: false,
         status,
         message: error.message,
         errors: error.errors,
@@ -103,6 +108,7 @@ export const globalErrorHandler = (
             : error,
       });
       const response: ErrorResponse = {
+        success: false,
         status: "error",
         message: "Something went wrong!",
         errors: [],

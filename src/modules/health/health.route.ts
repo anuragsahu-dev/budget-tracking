@@ -64,6 +64,7 @@ interface SystemInfo {
 // ============================================================
 // PUBLIC: Liveness Probe - Is the app running?
 // Used by: Docker HEALTHCHECK, Kubernetes livenessProbe
+// Note: These endpoints are NOT in /api/v1 - they're at /health
 // ============================================================
 router.get("/", (_req: Request, res: Response) => {
   res.status(200).json({
@@ -207,7 +208,7 @@ export async function getFullHealthStatus(): Promise<HealthStatus> {
   };
 }
 
-// Admin endpoint for full diagnostics
+// Admin endpoint for full diagnostics (at /health/admin, not /api/v1)
 router.get(
   "/admin",
   verifyJWT,

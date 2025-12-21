@@ -11,8 +11,58 @@ import {
 
 const router = Router();
 
+/**
+ * @swagger
+ * /users/profile:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile fetched successfully
+ *       401:
+ *         description: Authentication required
+ *       404:
+ *         description: User not found
+ */
 router.get("/profile", verifyJWT, UserController.getProfile);
 
+/**
+ * @swagger
+ * /users/profile:
+ *   patch:
+ *     summary: Update user profile
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 50
+ *               currency:
+ *                 type: string
+ *                 enum: [INR, USD]
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Authentication required
+ *       404:
+ *         description: User not found
+ */
 router.patch(
   "/profile",
   verifyJWT,
@@ -20,8 +70,33 @@ router.patch(
   UserController.updateProfile
 );
 
-// Avatar routes
-// Get pre-signed URL for avatar upload (requires auth)
+/**
+ * @swagger
+ * /users/avatar/upload-url:
+ *   get:
+ *     summary: Get pre-signed URL for avatar upload
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: fileType
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [image/jpeg, image/png, image/webp]
+ *         description: MIME type of the image
+ *     responses:
+ *       200:
+ *         description: Upload URL generated
+ *       400:
+ *         description: Invalid file type
+ *       401:
+ *         description: Authentication required
+ *       429:
+ *         description: Too many requests
+ */
 router.get(
   "/avatar/upload-url",
   verifyJWT,
@@ -30,7 +105,37 @@ router.get(
   UserController.getAvatarUploadUrl
 );
 
-// Confirm avatar upload after client uploads to S3
+/**
+ * @swagger
+ * /users/avatar:
+ *   patch:
+ *     summary: Confirm avatar upload
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - avatarId
+ *             properties:
+ *               avatarId:
+ *                 type: string
+ *                 description: The avatar ID from upload URL response
+ *     responses:
+ *       200:
+ *         description: Avatar confirmed
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Authentication required
+ *       404:
+ *         description: User not found
+ */
 router.patch(
   "/avatar",
   verifyJWT,
@@ -38,10 +143,43 @@ router.patch(
   UserController.confirmAvatarUpload
 );
 
-// Delete avatar
+/**
+ * @swagger
+ * /users/avatar:
+ *   delete:
+ *     summary: Delete user avatar
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Avatar reset to default
+ *       401:
+ *         description: Authentication required
+ *       404:
+ *         description: User not found
+ */
 router.delete("/avatar", verifyJWT, UserController.deleteAvatar);
 
-// Deactivate account (user can deactivate their own account)
+/**
+ * @swagger
+ * /users/deactivate:
+ *   post:
+ *     summary: Deactivate user account
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     description: User can deactivate their own account. Contact support to reactivate.
+ *     responses:
+ *       200:
+ *         description: Account deactivated
+ *       401:
+ *         description: Authentication required
+ *       404:
+ *         description: User not found
+ */
 router.post("/deactivate", verifyJWT, UserController.deactivateAccount);
 
 export default router;

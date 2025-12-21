@@ -4,6 +4,7 @@ import hpp from "hpp";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import passport from "passport";
+import swaggerUi from "swagger-ui-express";
 
 import { globalErrorHandler, ApiError } from "./middlewares/error.middleware";
 import authRouter from "./modules/auth/auth.route";
@@ -18,10 +19,24 @@ import subscriptionRouter from "./modules/subscription/subscription.route";
 import healthRouter from "./modules/health/health.route";
 
 import "./config/passport";
+import { swaggerSpec } from "./config/swagger";
 
 import { globalLimiter } from "./middlewares/rateLimit.middleware";
 
 const app = express();
+
+// ============================================================
+// SWAGGER DOCUMENTATION
+// ============================================================
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customCss: ".swagger-ui .topbar { display: none }",
+    customSiteTitle: "Budget Tracking API Docs",
+  })
+);
 
 // ============================================================
 // SECURITY MIDDLEWARE
