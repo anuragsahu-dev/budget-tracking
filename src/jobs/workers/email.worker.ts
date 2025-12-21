@@ -48,23 +48,38 @@ function generateOtpEmailContent(data: OtpEmailJobData) {
  * Generate payment success email content
  */
 function generatePaymentSuccessContent(data: PaymentSuccessJobData) {
+  const currencySymbol = data.currency === "INR" ? "₹" : "$";
+  const expiryDate = new Date(data.expiresAt).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   return {
     body: {
       name: data.userName,
-      intro: `Your payment of ${data.currency} ${data.amount.toFixed(
-        2
-      )} was successful!`,
+      intro: [
+        `Your payment of ${currencySymbol}${data.amount.toFixed(
+          2
+        )} was successful!`,
+        `Your ${data.plan.replace("_", " ")} subscription is now active.`,
+      ],
       table: {
         data: [
-          { key: "Transaction ID", value: data.transactionId },
+          { Item: "Transaction ID", Details: data.transactionId },
           {
-            key: "Amount",
-            value: `${data.currency} ${data.amount.toFixed(2)}`,
+            Item: "Amount Paid",
+            Details: `${currencySymbol}${data.amount.toFixed(2)}`,
           },
-          { key: "Status", value: "Completed" },
+          { Item: "Plan", Details: data.plan.replace("_", " ") },
+          { Item: "Valid Until", Details: expiryDate },
+          { Item: "Status", Details: "Active ✓" },
         ],
       },
-      outro: "Thank you for your purchase!",
+      outro: [
+        "Thank you for subscribing! You now have access to all PRO features.",
+        "If you have any questions, feel free to contact our support team.",
+      ],
     },
   };
 }

@@ -1,6 +1,7 @@
 import { PaymentRepository } from "./payment.repository";
 import { SubscriptionRepository } from "../subscription/subscription.repository";
 import { PlanPricingRepository } from "../admin/planPricing.repository";
+import { UserRepository } from "../user/user.repository";
 import { getPaymentProvider } from "../../infrastructure/payment";
 import { ApiError } from "../../middlewares/error.middleware";
 import type { Currency } from "../../types/payment.types";
@@ -9,6 +10,7 @@ import type {
   VerifyPaymentInput,
 } from "./payment.validation";
 import logger from "../../config/logger";
+import { queuePaymentSuccessEmail } from "../../jobs/queues/email.queue";
 import {
   PaymentProvider,
   PaymentStatus,
@@ -202,6 +204,9 @@ export class PaymentService {
   /**
    * Process a completed payment (called by /verify and webhook)
    * This is the core logic - idempotent and safe to call multiple times
+   *
+   * Idempotency: Uses payment.subscriptionId to track if THIS payment
+   * was already used to activate/extend a subscription.
    */
   static async processCompletedPayment(
     paymentId: string,
@@ -211,41 +216,47 @@ export class PaymentService {
     plan: SubscriptionPlan,
     currency: string
   ) {
-    // Check if subscription already active for this user (idempotency)
-    const existingSubscription = await SubscriptionRepository.findByUserId(
-      userId
+    // Step 1: Check if THIS PAYMENT was already processed (true idempotency)
+    const payment = await PaymentRepository.findByProviderOrderId(
+      razorpayOrderId
     );
-    if (
-      existingSubscription &&
-      existingSubscription.status === SubscriptionStatus.ACTIVE &&
-      existingSubscription.plan === plan
-    ) {
-      logger.info("Subscription already active, updating payment record only", {
+
+    if (!payment) {
+      logger.error("Payment not found in processCompletedPayment", {
+        razorpayOrderId,
         userId,
-        orderId: razorpayOrderId,
-        subscriptionId: existingSubscription.id,
       });
+      throw new ApiError(404, "Payment not found");
+    }
 
-      // Just update payment status and link
-      await PaymentRepository.updateByProviderOrderId(razorpayOrderId, {
-        status: PaymentStatus.COMPLETED,
-        providerPaymentId: razorpayPaymentId,
-        paidAt: new Date(),
-        subscriptionId: existingSubscription.id,
-      });
+    // If this payment already has a subscriptionId, it was already processed
+    // This prevents double extension from frontend + webhook
+    if (payment.subscriptionId) {
+      logger.info(
+        "Payment already processed, returning existing subscription",
+        {
+          userId,
+          orderId: razorpayOrderId,
+          paymentId: payment.id,
+          subscriptionId: payment.subscriptionId,
+        }
+      );
 
+      const subscription = await SubscriptionRepository.findByUserId(userId);
       return {
         success: true,
-        subscription: {
-          id: existingSubscription.id,
-          plan: existingSubscription.plan,
-          status: existingSubscription.status,
-          expiresAt: existingSubscription.expiresAt,
-        },
+        subscription: subscription
+          ? {
+              id: subscription.id,
+              plan: subscription.plan,
+              status: subscription.status,
+              expiresAt: subscription.expiresAt,
+            }
+          : null,
       };
     }
 
-    // Mark payment as completed first (critical - we received the money)
+    // Step 2: Mark payment as completed (critical - we received the money)
     const completedPayment = await PaymentRepository.updateByProviderOrderId(
       razorpayOrderId,
       {
@@ -270,7 +281,7 @@ export class PaymentService {
       // Continue anyway - subscription is more important for user
     }
 
-    // Get pricing for duration calculation
+    // Step 3: Get pricing for duration calculation
     const pricing = await PlanPricingRepository.findByPlanAndCurrency(
       plan,
       currency
@@ -280,10 +291,37 @@ export class PaymentService {
       pricing?.durationDays ??
       (plan === SubscriptionPlan.PRO_YEARLY ? 365 : 30);
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + durationDays);
+    // Step 4: Calculate expiry date
+    // If user has active subscription, extend from current expiry (don't lose remaining days)
+    // Otherwise, start from today
+    const existingSubscription = await SubscriptionRepository.findByUserId(
+      userId
+    );
 
-    // Activate subscription (upsert - handles both new and renewal)
+    let expiresAt: Date;
+    if (
+      existingSubscription &&
+      existingSubscription.expiresAt > new Date() &&
+      (existingSubscription.status === SubscriptionStatus.ACTIVE ||
+        existingSubscription.status === SubscriptionStatus.CANCELLED)
+    ) {
+      // Renewal: extend from current expiry date
+      expiresAt = new Date(existingSubscription.expiresAt);
+      expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+      logger.info("Extending subscription from current expiry", {
+        userId,
+        currentExpiry: existingSubscription.expiresAt,
+        newExpiry: expiresAt,
+        durationDays,
+      });
+    } else {
+      // New subscription or expired: start from today
+      expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + durationDays);
+    }
+
+    // Step 5: Activate/extend subscription (upsert)
     const subscriptionResult =
       await SubscriptionRepository.activateSubscription(
         userId,
@@ -304,6 +342,8 @@ export class PaymentService {
         amount: completedPayment.success
           ? completedPayment.data.amount
           : "unknown",
+        expiresAt, // Admin needs this to manually set subscription
+        durationDays,
         error: subscriptionResult.message,
         action: "REQUIRES_MANUAL_INTERVENTION",
         resolution: "Manually activate subscription for user OR process refund",
@@ -321,7 +361,7 @@ export class PaymentService {
       };
     }
 
-    // Link subscription to payment record
+    // Step 6: Link subscription to payment record (marks this payment as processed)
     const linkResult = await PaymentRepository.updateByProviderOrderId(
       razorpayOrderId,
       {
@@ -333,13 +373,15 @@ export class PaymentService {
     );
 
     if (!linkResult.success) {
-      // Not critical - subscription is active, just logging for data consistency
-      logger.warn("Failed to link subscription to payment record", {
+      // CRITICAL for idempotency - if this fails, payment might be processed again!
+      logger.error("CRITICAL: Failed to link subscription to payment", {
+        severity: "CRITICAL",
         paymentId,
         orderId: razorpayOrderId,
         subscriptionId: subscriptionResult.data.id,
         error: linkResult.message,
-        note: "User has access - this is a data consistency issue only",
+        note: "User has access, but payment may be processed again by webhook!",
+        action: "REQUIRES_MANUAL_INTERVENTION",
       });
     }
 
@@ -351,7 +393,32 @@ export class PaymentService {
       plan,
       expiresAt,
       durationDays,
+      isRenewal: !!existingSubscription,
     });
+
+    // Step 7: Send confirmation email (non-blocking)
+    try {
+      const user = await UserRepository.findUserById(userId);
+      if (user?.email) {
+        await queuePaymentSuccessEmail(
+          user.email,
+          user.fullName || "Valued Customer",
+          completedPayment.success ? Number(completedPayment.data.amount) : 0,
+          currency,
+          subscriptionResult.data.id,
+          plan,
+          expiresAt
+        );
+      }
+    } catch (emailError) {
+      // Don't fail the payment if email fails - just log it
+      logger.warn("Failed to queue payment success email", {
+        userId,
+        subscriptionId: subscriptionResult.data.id,
+        error:
+          emailError instanceof Error ? emailError.message : "Unknown error",
+      });
+    }
 
     return {
       success: true,

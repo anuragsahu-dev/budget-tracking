@@ -107,11 +107,14 @@ export class SubscriptionRepository {
   /**
    * Mark expired subscriptions
    * Returns count of updated subscriptions
+   * Includes both ACTIVE and CANCELLED subscriptions that have passed their expiresAt date
    */
   static async markExpiredSubscriptions(): Promise<number> {
     const result = await prisma.subscription.updateMany({
       where: {
-        status: SubscriptionStatus.ACTIVE,
+        status: {
+          in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED],
+        },
         expiresAt: { lt: new Date() },
       },
       data: {

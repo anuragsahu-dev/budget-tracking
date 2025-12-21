@@ -157,7 +157,7 @@ export class SubscriptionService {
    * Helper: Check if subscription grants access
    * - ACTIVE: always has access if not expired
    * - CANCELLED: still has access until expiresAt
-   * - EXPIRED/PENDING: no access
+   * - EXPIRED: no access
    */
   private static checkHasAccess(
     status: SubscriptionStatus,

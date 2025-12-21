@@ -13,12 +13,14 @@ import {
   statsQuerySchema,
   listPaymentsQuerySchema,
   paymentIdParamSchema,
+  updatePaymentSchema,
   createPlanPricingSchema,
   updatePlanPricingSchema,
   planPricingIdParamSchema,
   listSubscriptionsQuerySchema,
   subscriptionIdParamSchema,
   updateSubscriptionSchema,
+  createSubscriptionSchema,
 } from "./admin.validation";
 
 const router = Router();
@@ -99,6 +101,13 @@ router.get(
   AdminController.getPaymentById
 );
 
+// Update payment (manual intervention - fix status or link subscriptionId)
+router.patch(
+  "/payments/:id",
+  validate({ params: paymentIdParamSchema, body: updatePaymentSchema }),
+  AdminController.updatePayment
+);
+
 // ========== PLAN PRICING ROUTES ==========
 
 router.get("/pricing", AdminController.getAllPlanPricing);
@@ -147,6 +156,13 @@ router.patch(
     body: updateSubscriptionSchema,
   }),
   AdminController.updateSubscription
+);
+
+// Create subscription (manual intervention - when payment succeeded but subscription failed)
+router.post(
+  "/subscriptions",
+  validate({ body: createSubscriptionSchema }),
+  AdminController.createSubscription
 );
 
 // ========== FORCE LOGOUT ROUTE ==========

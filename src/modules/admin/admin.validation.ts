@@ -138,6 +138,15 @@ export const paymentIdParamSchema = z.object({
 
 export type PaymentIdParam = z.infer<typeof paymentIdParamSchema>;
 
+// Admin update payment (for manual intervention)
+export const updatePaymentSchema = z.object({
+  status: z.enum(paymentStatusValues).optional(),
+  subscriptionId: z.string().optional(),
+  failureReason: z.string().max(500).optional().nullable(),
+});
+
+export type UpdatePaymentInput = z.infer<typeof updatePaymentSchema>;
+
 // ========== PLAN PRICING SCHEMAS ==========
 
 const currencySchema = z
@@ -217,11 +226,22 @@ export type SubscriptionIdParam = z.infer<typeof subscriptionIdParamSchema>;
 
 export const updateSubscriptionSchema = z.object({
   status: z.enum(subscriptionStatusValues).optional(),
+  plan: z.enum(subscriptionPlanValues).optional(),
   extendDays: z
     .number()
     .int()
     .positive("Extension days must be positive")
     .optional(),
+  expiresAt: z.coerce.date().optional(), // Set exact expiry date
 });
 
 export type UpdateSubscriptionInput = z.infer<typeof updateSubscriptionSchema>;
+
+// Admin create subscription (for manual intervention when payment succeeded but subscription failed)
+export const createSubscriptionSchema = z.object({
+  userId: ulidSchema,
+  plan: z.enum(subscriptionPlanValues),
+  expiresAt: z.coerce.date(),
+});
+
+export type CreateSubscriptionInput = z.infer<typeof createSubscriptionSchema>;

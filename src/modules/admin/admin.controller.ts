@@ -23,6 +23,8 @@ import type {
   ListSubscriptionsQuery,
   SubscriptionIdParam,
   UpdateSubscriptionInput,
+  CreateSubscriptionInput,
+  UpdatePaymentInput,
 } from "./admin.validation";
 
 export const AdminController = {
@@ -266,6 +268,41 @@ export const AdminController = {
       "Subscription statistics fetched successfully",
       stats
     );
+  }),
+
+  /**
+   * Create subscription for user (manual intervention)
+   * POST /api/v1/admin/subscriptions
+   */
+  createSubscription: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
+    const data = getValidatedBody<CreateSubscriptionInput>(req);
+
+    const subscription = await AdminService.createSubscriptionForUser(
+      adminId,
+      data
+    );
+
+    return sendApiResponse(
+      res,
+      201,
+      "Subscription created successfully",
+      subscription
+    );
+  }),
+
+  /**
+   * Update payment (manual intervention)
+   * PATCH /api/v1/admin/payments/:id
+   */
+  updatePayment: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
+    const { id } = getValidatedParams<PaymentIdParam>(req);
+    const data = getValidatedBody<UpdatePaymentInput>(req);
+
+    const payment = await AdminService.updatePayment(adminId, id, data);
+
+    return sendApiResponse(res, 200, "Payment updated successfully", payment);
   }),
 
   // ========== FORCE LOGOUT ENDPOINT ==========

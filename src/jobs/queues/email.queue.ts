@@ -54,22 +54,26 @@ export async function queueOtpEmail(
 }
 
 /**
- * Add payment success email job to queue (for future use)
+ * Add payment success email job to queue
  */
 export async function queuePaymentSuccessEmail(
   email: string,
   userName: string,
   amount: number,
   currency: string,
-  transactionId: string
+  transactionId: string,
+  plan: string,
+  expiresAt: Date
 ): Promise<void> {
   await addEmailJob({
     type: "PAYMENT_SUCCESS",
     to: email,
-    subject: "Payment Successful",
+    subject: "Payment Successful - Your Subscription is Active",
     userName,
     amount,
     currency,
     transactionId,
+    plan,
+    expiresAt: expiresAt.toISOString(),
   });
 }

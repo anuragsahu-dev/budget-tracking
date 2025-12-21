@@ -12,8 +12,14 @@ import type {
   UpdatePlanPricingInput,
   ListSubscriptionsQuery,
   UpdateSubscriptionInput,
+  CreateSubscriptionInput,
+  UpdatePaymentInput,
 } from "./admin.validation";
-import { SubscriptionStatus } from "../../generated/prisma/client";
+import {
+  SubscriptionStatus,
+  SubscriptionPlan,
+  PaymentStatus,
+} from "../../generated/prisma/client";
 import logger from "../../config/logger";
 import { generateSlug } from "../../utils/slug";
 
@@ -454,7 +460,7 @@ export class AdminService {
   }
 
   /**
-   * Update subscription (extend or change status)
+   * Update subscription (extend, change status, change plan, or set exact expiry)
    */
   static async updateSubscription(
     adminId: string,
@@ -469,13 +475,24 @@ export class AdminService {
       throw new ApiError(404, "Subscription not found");
     }
 
-    const updateData: { status?: SubscriptionStatus; expiresAt?: Date } = {};
+    const updateData: {
+      status?: SubscriptionStatus;
+      plan?: SubscriptionPlan;
+      expiresAt?: Date;
+    } = {};
 
     if (data.status) {
       updateData.status = data.status;
     }
 
-    if (data.extendDays) {
+    if (data.plan) {
+      updateData.plan = data.plan;
+    }
+
+    // Priority: exact expiresAt > extendDays
+    if (data.expiresAt) {
+      updateData.expiresAt = data.expiresAt;
+    } else if (data.extendDays) {
       // Extend from current expiry or now, whichever is later
       const baseDate =
         subscription.expiresAt > new Date()
@@ -503,10 +520,81 @@ export class AdminService {
       adminId,
       subscriptionId,
       userId: subscription.userId,
-      plan: subscription.plan,
+      previousPlan: subscription.plan,
       previousStatus: subscription.status,
       previousExpiresAt: subscription.expiresAt,
       changes: updateData,
+    });
+
+    return result.data;
+  }
+
+  /**
+   * Create subscription for user (manual intervention)
+   * Used when payment succeeded but subscription creation failed
+   */
+  static async createSubscriptionForUser(
+    adminId: string,
+    data: CreateSubscriptionInput
+  ) {
+    const user = await AdminRepository.findUserById(data.userId);
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    const result = await AdminRepository.createSubscriptionForUser({
+      userId: data.userId,
+      plan: data.plan,
+      expiresAt: data.expiresAt,
+    });
+
+    if (!result.success) {
+      throw new ApiError(result.statusCode, result.message);
+    }
+
+    logger.info("Subscription created by admin (manual intervention)", {
+      adminId,
+      userId: data.userId,
+      subscriptionId: result.data.id,
+      plan: data.plan,
+      expiresAt: data.expiresAt,
+    });
+
+    return result.data;
+  }
+
+  /**
+   * Update payment (admin manual intervention)
+   * Used to fix payment status or link subscriptionId
+   */
+  static async updatePayment(
+    adminId: string,
+    paymentId: string,
+    data: UpdatePaymentInput
+  ) {
+    const payment = await AdminRepository.findPaymentById(paymentId);
+
+    if (!payment) {
+      throw new ApiError(404, "Payment not found");
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new ApiError(400, "No valid fields to update");
+    }
+
+    const result = await AdminRepository.updatePaymentById(paymentId, data);
+
+    if (!result.success) {
+      throw new ApiError(result.statusCode, result.message);
+    }
+
+    logger.info("Payment updated by admin (manual intervention)", {
+      adminId,
+      paymentId,
+      userId: payment.userId,
+      previousStatus: payment.status,
+      changes: data,
     });
 
     return result.data;

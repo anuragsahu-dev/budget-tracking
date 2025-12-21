@@ -160,7 +160,6 @@ enum SubscriptionPlan {
 enum SubscriptionStatus {
   ACTIVE
   EXPIRED
-  PENDING
   CANCELLED
 }
 
@@ -177,7 +176,7 @@ model Subscription {
   userId String @unique // One subscription per user
 
   plan   SubscriptionPlan // PRO_MONTHLY, PRO_YEARLY
-  status SubscriptionStatus // ACTIVE, EXPIRED, PENDING, CANCELLED
+  status SubscriptionStatus // ACTIVE, EXPIRED, CANCELLED
 
   // When the current period ends (user must pay again before this)
   expiresAt DateTime
@@ -222,13 +221,13 @@ model Payment {
 
   paidAt    DateTime?
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
-  @@index([providerOrderId]) // For Razorpay webhook verification
 }
 
 // ======= PLAN PRICING (admin-managed subscription prices) =======

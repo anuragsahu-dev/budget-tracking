@@ -10,7 +10,7 @@ import prisma from "../../config/prisma";
 import { SubscriptionStatus } from "../../generated/prisma/client";
 
 // Check if user has PRO access
-// Access granted if: subscription not expired AND payment was completed (not PENDING)
+// Access granted if: ACTIVE or CANCELLED subscription that hasn't expired
 async function hasActiveSubscription(userId: string): Promise<boolean> {
   const sub = await prisma.subscription.findUnique({
     where: { userId },
@@ -19,12 +19,14 @@ async function hasActiveSubscription(userId: string): Promise<boolean> {
 
   if (!sub) return false;
 
-  // expiresAt is the source of truth for access duration
-  // Only exclude PENDING status (payment not complete)
   const notExpired = sub.expiresAt > new Date();
-  const paymentComplete = sub.status !== SubscriptionStatus.PENDING;
 
-  return notExpired && paymentComplete;
+  // ACTIVE or CANCELLED subscriptions have access until expiry
+  return (
+    (sub.status === SubscriptionStatus.ACTIVE ||
+      sub.status === SubscriptionStatus.CANCELLED) &&
+    notExpired
+  );
 }
 
 function getCurrentPeriod() {

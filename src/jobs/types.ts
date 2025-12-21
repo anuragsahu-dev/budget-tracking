@@ -22,7 +22,7 @@ export interface OtpEmailJobData extends BaseEmailJobData {
 }
 
 /**
- * Payment success job data (for future use)
+ * Payment success job data
  */
 export interface PaymentSuccessJobData extends BaseEmailJobData {
   type: "PAYMENT_SUCCESS";
@@ -30,6 +30,8 @@ export interface PaymentSuccessJobData extends BaseEmailJobData {
   amount: number;
   currency: string;
   transactionId: string;
+  plan: string;
+  expiresAt: string; // ISO date string
 }
 
 /**

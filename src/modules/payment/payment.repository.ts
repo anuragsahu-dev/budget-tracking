@@ -29,7 +29,7 @@ export class PaymentRepository {
   static async findByProviderOrderId(
     providerOrderId: string
   ): Promise<Payment | null> {
-    return prisma.payment.findFirst({
+    return prisma.payment.findUnique({
       where: { providerOrderId },
     });
   }
@@ -89,11 +89,12 @@ export class PaymentRepository {
 
   /**
    * Update payment by provider order ID
+   * Since providerOrderId is @unique, we can use update directly
    */
   static async updateByProviderOrderId(
     providerOrderId: string,
     data: {
-      status: PaymentStatus;
+      status?: PaymentStatus;
       providerPaymentId?: string;
       paidAt?: Date;
       failureReason?: string;
@@ -101,26 +102,19 @@ export class PaymentRepository {
     }
   ): Promise<RepositoryResult<Payment>> {
     try {
-      const payment = await prisma.payment.updateMany({
+      const payment = await prisma.payment.update({
         where: { providerOrderId },
         data,
       });
 
-      if (payment.count === 0) {
+      return { success: true, data: payment };
+    } catch (error) {
+      if (
+        isPrismaError(error) &&
+        error.code === PRISMA_ERROR.RECORD_NOT_FOUND
+      ) {
         return notFoundError("Payment not found");
       }
-
-      // Fetch and return the updated payment
-      const updated = await prisma.payment.findFirst({
-        where: { providerOrderId },
-      });
-
-      if (!updated) {
-        return notFoundError("Payment not found after update");
-      }
-
-      return { success: true, data: updated };
-    } catch (error) {
       return unknownError("Failed to update payment", error);
     }
   }

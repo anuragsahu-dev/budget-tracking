@@ -460,7 +460,11 @@ export class AdminRepository {
    */
   static async updateSubscriptionById(
     id: string,
-    data: { status?: SubscriptionStatus; expiresAt?: Date }
+    data: {
+      status?: SubscriptionStatus;
+      plan?: SubscriptionPlan;
+      expiresAt?: Date;
+    }
   ): Promise<RepositoryResult<Subscription>> {
     try {
       const subscription = await prisma.subscription.update({
@@ -486,7 +490,6 @@ export class AdminRepository {
     const [
       totalSubscriptions,
       activeSubscriptions,
-      pendingSubscriptions,
       expiredSubscriptions,
       cancelledSubscriptions,
       monthlySubscriptions,
@@ -496,9 +499,6 @@ export class AdminRepository {
       prisma.subscription.count(),
       prisma.subscription.count({
         where: { status: SubscriptionStatus.ACTIVE },
-      }),
-      prisma.subscription.count({
-        where: { status: SubscriptionStatus.PENDING },
       }),
       prisma.subscription.count({
         where: { status: SubscriptionStatus.EXPIRED },
@@ -532,13 +532,72 @@ export class AdminRepository {
     return {
       totalSubscriptions,
       activeSubscriptions,
-      pendingSubscriptions,
       expiredSubscriptions,
       cancelledSubscriptions,
       monthlySubscriptions,
       yearlySubscriptions,
       expiringIn7Days,
     };
+  }
+
+  /**
+   * Create subscription for user (admin manual intervention)
+   * Used when payment succeeded but subscription creation failed
+   */
+  static async createSubscriptionForUser(data: {
+    userId: string;
+    plan: SubscriptionPlan;
+    expiresAt: Date;
+  }): Promise<RepositoryResult<Subscription>> {
+    try {
+      // Upsert to handle both new and existing subscriptions
+      const subscription = await prisma.subscription.upsert({
+        where: { userId: data.userId },
+        create: {
+          userId: data.userId,
+          plan: data.plan,
+          status: SubscriptionStatus.ACTIVE,
+          expiresAt: data.expiresAt,
+        },
+        update: {
+          plan: data.plan,
+          status: SubscriptionStatus.ACTIVE,
+          expiresAt: data.expiresAt,
+        },
+      });
+      return { success: true, data: subscription };
+    } catch (error) {
+      return unknownError("Failed to create subscription", error);
+    }
+  }
+
+  /**
+   * Update payment by ID (admin manual intervention)
+   * Used to link subscriptionId or update status manually
+   */
+  static async updatePaymentById(
+    id: string,
+    data: {
+      status?: PaymentStatus;
+      subscriptionId?: string | null;
+      failureReason?: string | null;
+    }
+  ): Promise<RepositoryResult<Payment>> {
+    try {
+      const payment = await prisma.payment.update({
+        where: { id },
+        data,
+      });
+      return { success: true, data: payment };
+    } catch (error) {
+      if (
+        isPrismaError(error) &&
+        error.code === PRISMA_ERROR.RECORD_NOT_FOUND
+      ) {
+        return notFoundError("Payment not found");
+      }
+      return unknownError("Failed to update payment", error);
+    }
   }
 
   // ========== SESSION MANAGEMENT ==========
