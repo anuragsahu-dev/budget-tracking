@@ -41,4 +41,7 @@ router.patch(
 // Delete avatar
 router.delete("/avatar", verifyJWT, UserController.deleteAvatar);
 
+// Deactivate account (user can deactivate their own account)
+router.post("/deactivate", verifyJWT, UserController.deactivateAccount);
+
 export default router;

@@ -9,7 +9,6 @@ import {
 } from "../../utils/repository.utils";
 
 export class SessionRepository {
-  
   static async createSession(data: {
     userId: string;
     refreshTokenHash: string;
@@ -30,7 +29,7 @@ export class SessionRepository {
         isRevoked: false,
         expireAt: { gt: new Date() },
       },
-      include: { user: { select: { id: true, role: true } } },
+      include: { user: { select: { id: true, role: true, status: true } } },
     });
   }
 

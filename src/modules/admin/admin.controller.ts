@@ -113,6 +113,15 @@ export const AdminController = {
     return sendApiResponse(res, 200, "User status updated successfully", user);
   }),
 
+  deleteUser: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
+    const { id } = getValidatedParams<UserIdParam>(req);
+
+    const result = await AdminService.deleteUser(id, adminId);
+
+    return sendApiResponse(res, 200, "User permanently deleted", result);
+  }),
+
   // ========== STATISTICS ENDPOINTS ==========
 
   getStats: asyncHandler(async (req: Request, res: Response) => {

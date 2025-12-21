@@ -45,7 +45,8 @@ export const AuthController = {
 
     const { accessToken, refreshToken } = await SessionService.generateTokens(
       data.data.id,
-      data.data.role
+      data.data.role,
+      data.data.status
     );
 
     res.cookie("refreshToken", refreshToken, {
@@ -85,7 +86,8 @@ export const AuthController = {
 
     const { accessToken, refreshToken } = await SessionService.generateTokens(
       user.id,
-      user.role
+      user.role,
+      user.status
     );
 
     res.cookie("refreshToken", refreshToken, {

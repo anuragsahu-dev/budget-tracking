@@ -83,7 +83,7 @@ model Transaction {
   date        DateTime        @default(now())
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category? @relation(fields: [categoryId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -117,7 +117,7 @@ model BudgetAllocation {
   amount     Decimal @db.Decimal(12, 2) // allocated amount for this category in that month
 
   budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   @@unique([budgetId, categoryId]) // one allocation per category per budget/month
 }

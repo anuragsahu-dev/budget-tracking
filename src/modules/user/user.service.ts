@@ -1,4 +1,5 @@
 import { UserRepository } from "./user.repository";
+import { SessionRepository } from "../session/session.repository";
 import { ApiError } from "../../middlewares/error.middleware";
 import type {
   UpdateProfileInput,
@@ -140,6 +141,37 @@ export class UserService {
 
     return {
       avatarUrl: result.data.avatarUrl,
+    };
+  }
+
+  /**
+   * Deactivate user's own account
+   * User can reactivate by contacting support or admin reactivates
+   */
+  static async deactivateAccount(userId: string) {
+    const user = await UserRepository.findUserById(userId);
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    // Update user status to INACTIVE
+    const result = await UserRepository.updateUser(userId, {
+      status: "INACTIVE",
+    });
+
+    if (!result.success) {
+      throw new ApiError(result.statusCode, result.message);
+    }
+
+    // Revoke all sessions to log user out everywhere
+    await SessionRepository.revokeAllUserSessions(userId);
+
+    logger.info("User account deactivated", { userId });
+
+    return {
+      message:
+        "Your account has been deactivated. Contact support to reactivate.",
     };
   }
 }

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { totalmem } from "os";
+import { totalmem } from "node:os";
 import prisma from "../../config/prisma";
 import redis from "../../config/redis";
 import { verifyJWT } from "../../middlewares/auth.middleware";

@@ -6,7 +6,7 @@ import { ApiError } from "../../middlewares/error.middleware";
 import logger from "../../config/logger";
 import { SessionRepository } from "./session.repository";
 import type { CookieOptions } from "express";
-import type { UserRole } from "../../generated/prisma/client";
+import type { UserRole, UserStatus } from "../../generated/prisma/client";
 import type { TokenPair, DecodedRefreshToken } from "./session.types";
 
 const isProd = config.server.nodeEnv === "production";
@@ -32,7 +32,8 @@ export class SessionService {
 
   static async generateTokens(
     userId: string,
-    role: UserRole
+    role: UserRole,
+    status: UserStatus
   ): Promise<TokenPair> {
     const activeCount = await SessionRepository.countActiveSessions(userId);
     if (activeCount >= this.MAX_SESSIONS_PER_USER) {
@@ -65,8 +66,9 @@ export class SessionService {
       throw new ApiError(sessionResult.statusCode, sessionResult.message);
     }
 
+    // Include status in access token for fast auth check
     const accessToken = jwt.sign(
-      { id: userId, role },
+      { id: userId, role, status },
       config.auth.accessTokenSecret,
       { expiresIn: config.auth.accessTokenExpiry }
     );
@@ -79,8 +81,9 @@ export class SessionService {
   /**
    * Rotating Refresh Token Strategy:
    * 1. Validate the old refresh token
-   * 2. Revoke the old session
-   * 3. Generate new token pair (access + refresh)
+   * 2. Check user status (reject if not ACTIVE)
+   * 3. Revoke the old session
+   * 4. Generate new token pair (access + refresh)
    * This extends the user's session on each refresh (sliding window)
    */
   static async refreshAccessToken(refreshToken: string): Promise<TokenPair> {
@@ -99,6 +102,23 @@ export class SessionService {
         throw new ApiError(401, "Invalid or expired refresh token");
       }
 
+      // Check user status - reject if not ACTIVE
+      const { UserStatus } = await import("../../generated/prisma/client");
+      if (session.user.status !== UserStatus.ACTIVE) {
+        // Revoke all sessions for this user
+        await SessionRepository.revokeAllUserSessions(session.user.id);
+
+        logger.warn("Token refresh rejected - user not active", {
+          userId: session.user.id,
+          status: session.user.status,
+        });
+
+        throw new ApiError(
+          403,
+          "Your account is not active. Please contact support."
+        );
+      }
+
       // Revoke the old session (rotate the token)
       // Note: We don't block on failure — old session will expire naturally
       const revokeResult = await SessionRepository.revokeSession(session.id);
@@ -114,10 +134,11 @@ export class SessionService {
         });
       }
 
-      // Generate new token pair (this creates a new session)
+      // Generate new token pair with current status
       const tokens = await this.generateTokens(
         session.user.id,
-        session.user.role
+        session.user.role,
+        session.user.status
       );
 
       logger.info("Tokens rotated successfully", { userId: decoded.id });

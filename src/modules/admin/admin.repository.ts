@@ -618,4 +618,51 @@ export class AdminRepository {
       return unknownError("Failed to revoke user sessions", error);
     }
   }
+
+  // ========== USER DELETION ==========
+
+  /**
+   * Permanently delete a user and all their data
+   * This is irreversible - use with caution
+   * Cascades: transactions, budgets, categories, sessions, payments, subscription
+   */
+  static async deleteUser(
+    userId: string
+  ): Promise<RepositoryResult<{ deleted: boolean }>> {
+    try {
+      // Check user exists and is not an admin
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+
+      if (!user) {
+        return notFoundError("User not found");
+      }
+
+      if (user.role === UserRole.ADMIN) {
+        return {
+          success: false,
+          statusCode: 403,
+          message: "Cannot delete admin users",
+          error: "FORBIDDEN",
+        };
+      }
+
+      // Delete will cascade to all related data due to onDelete: Cascade
+      await prisma.user.delete({
+        where: { id: userId },
+      });
+
+      return { success: true, data: { deleted: true } };
+    } catch (error) {
+      if (
+        isPrismaError(error) &&
+        error.code === PRISMA_ERROR.RECORD_NOT_FOUND
+      ) {
+        return notFoundError("User not found");
+      }
+      return unknownError("Failed to delete user", error);
+    }
+  }
 }

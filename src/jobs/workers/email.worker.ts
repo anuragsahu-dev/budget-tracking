@@ -1,7 +1,9 @@
 import { Worker, Job } from "bullmq";
 import { bullmqConnection } from "../../config/redis";
 import logger from "../../config/logger";
+import { config } from "../../config/config";
 import { sendEmail } from "../../utils/mail";
+import { formatCurrency } from "../../utils/currency";
 import type {
   EmailJobData,
   OtpEmailJobData,
@@ -49,7 +51,7 @@ function generateOtpEmailContent(data: OtpEmailJobData) {
  * Generate payment success email content
  */
 function generatePaymentSuccessContent(data: PaymentSuccessJobData) {
-  const currencySymbol = data.currency === "INR" ? "₹" : "$";
+  const formattedAmount = formatCurrency(data.amount, data.currency);
   const expiryDate = new Date(data.expiresAt).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "long",
@@ -60,9 +62,7 @@ function generatePaymentSuccessContent(data: PaymentSuccessJobData) {
     body: {
       name: data.userName,
       intro: [
-        `Your payment of ${currencySymbol}${data.amount.toFixed(
-          2
-        )} was successful!`,
+        `Your payment of ${formattedAmount} was successful!`,
         `Your ${data.plan.replace("_", " ")} subscription is now active.`,
       ],
       table: {
@@ -70,7 +70,7 @@ function generatePaymentSuccessContent(data: PaymentSuccessJobData) {
           { Item: "Transaction ID", Details: data.transactionId },
           {
             Item: "Amount Paid",
-            Details: `${currencySymbol}${data.amount.toFixed(2)}`,
+            Details: formattedAmount,
           },
           { Item: "Plan", Details: data.plan.replace("_", " ") },
           { Item: "Valid Until", Details: expiryDate },
@@ -117,7 +117,7 @@ function generateSubscriptionExpiringContent(
         button: {
           color: "#22BC66",
           text: "Renew Now",
-          link: "https://yourapp.com/subscription", // Replace with actual URL
+          link: `${config.server.clientUrl}/subscription`,
         },
       },
       outro: [

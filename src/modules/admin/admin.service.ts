@@ -18,7 +18,7 @@ import type {
 import {
   SubscriptionStatus,
   SubscriptionPlan,
-  PaymentStatus,
+  UserStatus,
 } from "../../generated/prisma/client";
 import logger from "../../config/logger";
 import { generateSlug } from "../../utils/slug";
@@ -234,6 +234,7 @@ export class AdminService {
 
   /**
    * Update user status
+   * Revokes all sessions if status is changed to non-ACTIVE
    */
   static async updateUserStatus(
     userId: string,
@@ -262,6 +263,18 @@ export class AdminService {
       throw new ApiError(result.statusCode, result.message);
     }
 
+    // If status changed to non-ACTIVE, revoke all sessions to force re-login
+    if (data.status !== UserStatus.ACTIVE) {
+      const { SessionRepository } = await import(
+        "../session/session.repository"
+      );
+      await SessionRepository.revokeAllUserSessions(userId);
+      logger.info("User sessions revoked due to status change", {
+        userId,
+        newStatus: data.status,
+      });
+    }
+
     logger.info("User status updated", {
       userId,
       adminId,
@@ -270,6 +283,31 @@ export class AdminService {
     });
 
     return result.data;
+  }
+
+  /**
+   * Permanently delete a user and all their data
+   * This is irreversible
+   */
+  static async deleteUser(userId: string, adminId: string) {
+    // Prevent admin from deleting themselves
+    if (userId === adminId) {
+      logger.warn("Admin attempted to delete own account", { adminId });
+      throw new ApiError(403, "You cannot delete your own account");
+    }
+
+    const result = await AdminRepository.deleteUser(userId);
+
+    if (!result.success) {
+      throw new ApiError(result.statusCode, result.message);
+    }
+
+    logger.info("User permanently deleted", {
+      userId,
+      deletedBy: adminId,
+    });
+
+    return { deleted: true, userId };
   }
 
   // ========== STATISTICS SERVICE ==========

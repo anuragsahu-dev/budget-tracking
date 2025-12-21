@@ -70,6 +70,7 @@ export class AuthService {
       email: user.email,
       isEmailVerified: updatedUser.isEmailVerified,
       role: user.role,
+      status: user.status,
       fullName: user.fullName,
     };
 

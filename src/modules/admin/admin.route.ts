@@ -73,6 +73,13 @@ router.patch(
   AdminController.updateUserStatus
 );
 
+// Permanently delete a user (GDPR right to be forgotten)
+router.delete(
+  "/users/:id",
+  validate({ params: userIdParamSchema }),
+  AdminController.deleteUser
+);
+
 // ========== STATISTICS ROUTES ==========
 
 router.get(
