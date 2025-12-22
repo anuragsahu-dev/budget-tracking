@@ -14,7 +14,8 @@
     "test:unit": "vitest --run test/unit",
     "test:integration": "vitest --run test/integration",
     "test:coverage": "vitest --run --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "prepare": "husky"
   },
   "keywords": [
     "budget"
@@ -54,6 +55,8 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
     "@eslint/js": "^9.36.0",
     "@types/cookie-parser": "^1.4.9",
     "@types/cors": "^2.8.19",
@@ -73,7 +76,9 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "eslint": "^9.36.0",
+    "husky": "^9.1.7",
     "ioredis-mock": "^8.13.1",
+    "lint-staged": "^16.2.7",
     "nodemon": "^3.1.10",
     "prisma": "7.1.0",
     "supertest": "^7.1.4",
@@ -85,5 +90,10 @@
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
+  },
+  "lint-staged": {
+    "*.{ts,js}": [
+      "eslint --fix"
+    ]
   }
 }
