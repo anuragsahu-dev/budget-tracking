@@ -70,6 +70,7 @@ export class AuthService {
       email: user.email,
       isEmailVerified: updatedUser.isEmailVerified,
       role: user.role,
+      status: user.status,
       fullName: user.fullName,
     };
 
@@ -99,7 +100,7 @@ export class AuthService {
       fullName: updatedUser.fullName,
     };
 
-    return responseData;
+    return { message: "Name updated successfully", data: responseData };
   }
 
   static async me(id: string) {
@@ -115,6 +116,6 @@ export class AuthService {
       fullName: user.fullName,
     };
 
-    return responseData;
+    return { message: "User fetched successfully", data: responseData };
   }
 }

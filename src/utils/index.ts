@@ -29,6 +29,3 @@ export type {
 
 // Slug utilities
 export { generateSlug } from "./slug";
-
-// Token utilities
-export { generateTemporaryToken } from "./token";

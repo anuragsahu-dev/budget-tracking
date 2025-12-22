@@ -3,8 +3,12 @@ import {
   Prisma,
   Category,
   UserStatus,
+  UserRole,
   Payment,
   PaymentStatus,
+  Subscription,
+  SubscriptionStatus,
+  SubscriptionPlan,
 } from "../../generated/prisma/client";
 import {
   PRISMA_ERROR,
@@ -20,19 +24,31 @@ import {
 import { CategoryRepository } from "../category/category.repository";
 import type {
   SafeUser,
+  UserSummary,
   UserFilters,
   PaginationOptions,
   PaymentFilters,
+  SubscriptionFilters,
+  SubscriptionWithUser,
+  PlatformStats,
 } from "./admin.types";
 
-// Re-export types for consumers
-export type { SafeUser, UserFilters, PaginationOptions };
+// Minimal fields for list view
+const USER_SUMMARY_SELECT = {
+  id: true,
+  email: true,
+  fullName: true,
+  avatarUrl: true,
+  status: true,
+  createdAt: true,
+} as const;
 
-// Safe user select fields
+// Full fields for detail view
 const SAFE_USER_SELECT = {
   id: true,
   email: true,
   fullName: true,
+  avatarUrl: true,
   isEmailVerified: true,
   googleId: true,
   currency: true,
@@ -135,12 +151,13 @@ export class AdminRepository {
   static async findAllUsers(
     filters: UserFilters,
     pagination: PaginationOptions
-  ): Promise<PaginatedResult<SafeUser>> {
-    const { role, status, search } = filters;
+  ): Promise<PaginatedResult<UserSummary>> {
+    const { status, search } = filters;
     const { page, limit, sortBy, sortOrder } = pagination;
 
     const whereClause: Prisma.UserWhereInput = {
-      ...(role && { role }),
+      // Only fetch regular users, never admins
+      role: UserRole.USER,
       ...(status && { status }),
       ...(search && {
         OR: [
@@ -155,7 +172,7 @@ export class AdminRepository {
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where: whereClause,
-        select: SAFE_USER_SELECT,
+        select: USER_SUMMARY_SELECT,
         orderBy: { [sortBy]: sortOrder },
         skip,
         take: limit,
@@ -164,7 +181,7 @@ export class AdminRepository {
     ]);
 
     return {
-      data: users as SafeUser[],
+      data: users as UserSummary[],
       meta: createPaginationMeta(total, page, limit),
     };
   }
@@ -200,27 +217,59 @@ export class AdminRepository {
 
   // ========== STATISTICS METHODS ==========
 
-  static async getStats(from?: Date, to?: Date) {
+  static async getStats(from?: Date, to?: Date): Promise<PlatformStats> {
     const dateFilter =
       from || to
         ? { createdAt: { ...(from && { gte: from }), ...(to && { lte: to }) } }
         : {};
 
-    const [totalUsers, activeUsers, newUsers, totalTransactions, totalBudgets] =
-      await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
-        prisma.user.count({ where: dateFilter }),
-        prisma.transaction.count({ where: dateFilter }),
-        prisma.budget.count({ where: dateFilter }),
-      ]);
-
-    return {
+    // All queries in parallel for performance
+    const [
+      // Overview stats (all-time, no date filter)
       totalUsers,
       activeUsers,
-      newUsers,
+      suspendedUsers,
       totalTransactions,
       totalBudgets,
+      totalSystemCategories,
+      // Period stats (date filtered)
+      newUsers,
+      newTransactions,
+      newBudgets,
+    ] = await Promise.all([
+      // Overview - All time
+      prisma.user.count({ where: { role: UserRole.USER } }),
+      prisma.user.count({
+        where: { role: UserRole.USER, status: UserStatus.ACTIVE },
+      }),
+      prisma.user.count({
+        where: { role: UserRole.USER, status: UserStatus.SUSPENDED },
+      }),
+      prisma.transaction.count(),
+      prisma.budget.count(),
+      prisma.category.count({ where: { userId: null } }),
+      // Period - With date filter (or all-time if no dates provided)
+      prisma.user.count({ where: { role: UserRole.USER, ...dateFilter } }),
+      prisma.transaction.count({ where: dateFilter }),
+      prisma.budget.count({ where: dateFilter }),
+    ]);
+
+    return {
+      overview: {
+        totalUsers,
+        activeUsers,
+        suspendedUsers,
+        totalTransactions,
+        totalBudgets,
+        totalSystemCategories,
+      },
+      period: {
+        from: from ?? null,
+        to: to ?? null,
+        newUsers,
+        newTransactions,
+        newBudgets,
+      },
     };
   }
 
@@ -327,5 +376,293 @@ export class AdminRepository {
       refundedPayments,
       totalRevenue: Number(totalRevenue._sum.amount ?? 0),
     };
+  }
+
+  // ========== SUBSCRIPTION MANAGEMENT METHODS ==========
+
+  /**
+   * Find all subscriptions with filters and pagination
+   */
+  static async findAllSubscriptions(
+    filters: SubscriptionFilters,
+    pagination: PaginationOptions
+  ): Promise<PaginatedResult<SubscriptionWithUser>> {
+    const { status, plan, expiringWithinDays } = filters;
+    const { page, limit, sortBy, sortOrder } = pagination;
+
+    const whereClause: Prisma.SubscriptionWhereInput = {
+      ...(plan && { plan }),
+      ...(expiringWithinDays
+        ? {
+            status: SubscriptionStatus.ACTIVE,
+            expiresAt: {
+              lte: new Date(
+                Date.now() + expiringWithinDays * 24 * 60 * 60 * 1000
+              ),
+              gte: new Date(),
+            },
+          }
+        : status && { status }),
+    };
+
+    const skip = (page - 1) * limit;
+
+    const [subscriptions, total] = await Promise.all([
+      prisma.subscription.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: { id: true, email: true, fullName: true },
+          },
+        },
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      prisma.subscription.count({ where: whereClause }),
+    ]);
+
+    return {
+      data: subscriptions as SubscriptionWithUser[],
+      meta: createPaginationMeta(total, page, limit),
+    };
+  }
+
+  /**
+   * Find subscription by ID with user and payment details
+   */
+  static async findSubscriptionById(id: string) {
+    return prisma.subscription.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: { id: true, email: true, fullName: true },
+        },
+        payments: {
+          select: {
+            id: true,
+            plan: true,
+            amount: true,
+            currency: true,
+            status: true,
+            paidAt: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+      },
+    });
+  }
+
+  /**
+   * Update subscription by ID
+   */
+  static async updateSubscriptionById(
+    id: string,
+    data: {
+      status?: SubscriptionStatus;
+      plan?: SubscriptionPlan;
+      expiresAt?: Date;
+    }
+  ): Promise<RepositoryResult<Subscription>> {
+    try {
+      const subscription = await prisma.subscription.update({
+        where: { id },
+        data,
+      });
+      return { success: true, data: subscription };
+    } catch (error) {
+      if (
+        isPrismaError(error) &&
+        error.code === PRISMA_ERROR.RECORD_NOT_FOUND
+      ) {
+        return notFoundError("Subscription not found");
+      }
+      return unknownError("Failed to update subscription", error);
+    }
+  }
+
+  /**
+   * Get subscription statistics
+   */
+  static async getSubscriptionStats() {
+    const [
+      totalSubscriptions,
+      activeSubscriptions,
+      expiredSubscriptions,
+      cancelledSubscriptions,
+      monthlySubscriptions,
+      yearlySubscriptions,
+      expiringIn7Days,
+    ] = await Promise.all([
+      prisma.subscription.count(),
+      prisma.subscription.count({
+        where: { status: SubscriptionStatus.ACTIVE },
+      }),
+      prisma.subscription.count({
+        where: { status: SubscriptionStatus.EXPIRED },
+      }),
+      prisma.subscription.count({
+        where: { status: SubscriptionStatus.CANCELLED },
+      }),
+      prisma.subscription.count({
+        where: {
+          plan: SubscriptionPlan.PRO_MONTHLY,
+          status: SubscriptionStatus.ACTIVE,
+        },
+      }),
+      prisma.subscription.count({
+        where: {
+          plan: SubscriptionPlan.PRO_YEARLY,
+          status: SubscriptionStatus.ACTIVE,
+        },
+      }),
+      prisma.subscription.count({
+        where: {
+          status: SubscriptionStatus.ACTIVE,
+          expiresAt: {
+            lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            gte: new Date(),
+          },
+        },
+      }),
+    ]);
+
+    return {
+      totalSubscriptions,
+      activeSubscriptions,
+      expiredSubscriptions,
+      cancelledSubscriptions,
+      monthlySubscriptions,
+      yearlySubscriptions,
+      expiringIn7Days,
+    };
+  }
+
+  /**
+   * Create subscription for user (admin manual intervention)
+   * Used when payment succeeded but subscription creation failed
+   */
+  static async createSubscriptionForUser(data: {
+    userId: string;
+    plan: SubscriptionPlan;
+    expiresAt: Date;
+  }): Promise<RepositoryResult<Subscription>> {
+    try {
+      // Upsert to handle both new and existing subscriptions
+      const subscription = await prisma.subscription.upsert({
+        where: { userId: data.userId },
+        create: {
+          userId: data.userId,
+          plan: data.plan,
+          status: SubscriptionStatus.ACTIVE,
+          expiresAt: data.expiresAt,
+        },
+        update: {
+          plan: data.plan,
+          status: SubscriptionStatus.ACTIVE,
+          expiresAt: data.expiresAt,
+        },
+      });
+      return { success: true, data: subscription };
+    } catch (error) {
+      return unknownError("Failed to create subscription", error);
+    }
+  }
+
+  /**
+   * Update payment by ID (admin manual intervention)
+   * Used to link subscriptionId or update status manually
+   */
+  static async updatePaymentById(
+    id: string,
+    data: {
+      status?: PaymentStatus;
+      subscriptionId?: string | null;
+      failureReason?: string | null;
+    }
+  ): Promise<RepositoryResult<Payment>> {
+    try {
+      const payment = await prisma.payment.update({
+        where: { id },
+        data,
+      });
+      return { success: true, data: payment };
+    } catch (error) {
+      if (
+        isPrismaError(error) &&
+        error.code === PRISMA_ERROR.RECORD_NOT_FOUND
+      ) {
+        return notFoundError("Payment not found");
+      }
+      return unknownError("Failed to update payment", error);
+    }
+  }
+
+  // ========== SESSION MANAGEMENT ==========
+
+  /**
+   * Revoke all sessions for a user (force logout)
+   */
+  static async revokeAllUserSessions(
+    userId: string
+  ): Promise<RepositoryResult<{ count: number }>> {
+    try {
+      const result = await prisma.session.updateMany({
+        where: { userId, isRevoked: false },
+        data: { isRevoked: true },
+      });
+      return { success: true, data: { count: result.count } };
+    } catch (error) {
+      return unknownError("Failed to revoke user sessions", error);
+    }
+  }
+
+  // ========== USER DELETION ==========
+
+  /**
+   * Permanently delete a user and all their data
+   * This is irreversible - use with caution
+   * Cascades: transactions, budgets, categories, sessions, payments, subscription
+   */
+  static async deleteUser(
+    userId: string
+  ): Promise<RepositoryResult<{ deleted: boolean }>> {
+    try {
+      // Check user exists and is not an admin
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+
+      if (!user) {
+        return notFoundError("User not found");
+      }
+
+      if (user.role === UserRole.ADMIN) {
+        return {
+          success: false,
+          statusCode: 403,
+          message: "Cannot delete admin users",
+          error: "FORBIDDEN",
+        };
+      }
+
+      // Delete will cascade to all related data due to onDelete: Cascade
+      await prisma.user.delete({
+        where: { id: userId },
+      });
+
+      return { success: true, data: { deleted: true } };
+    } catch (error) {
+      if (
+        isPrismaError(error) &&
+        error.code === PRISMA_ERROR.RECORD_NOT_FOUND
+      ) {
+        return notFoundError("User not found");
+      }
+      return unknownError("Failed to delete user", error);
+    }
   }
 }

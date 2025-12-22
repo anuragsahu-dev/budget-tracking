@@ -70,4 +70,27 @@ export const UserController = {
 
     return sendApiResponse(res, 200, "Avatar deleted successfully", result);
   }),
+
+  /**
+   * Deactivate user's own account
+   */
+  deactivateAccount: asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.userId as string;
+
+    const result = await UserService.deactivateAccount(userId);
+
+    // Clear refresh token cookie
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return sendApiResponse(
+      res,
+      200,
+      "Account deactivated successfully",
+      result
+    );
+  }),
 };

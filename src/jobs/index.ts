@@ -9,6 +9,7 @@ export type {
   EmailJobType,
   OtpEmailJobData,
   PaymentSuccessJobData,
+  SubscriptionExpiringJobData,
 } from "./types";
 
 // Email Queues
@@ -17,6 +18,7 @@ export {
   addEmailJob,
   queueOtpEmail,
   queuePaymentSuccessEmail,
+  queueSubscriptionExpiringEmail,
 } from "./queues";
 
 // Scheduler Queues

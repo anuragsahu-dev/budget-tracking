@@ -45,7 +45,8 @@ export const AuthController = {
 
     const { accessToken, refreshToken } = await SessionService.generateTokens(
       data.data.id,
-      data.data.role
+      data.data.role,
+      data.data.status
     );
 
     res.cookie("refreshToken", refreshToken, {
@@ -68,13 +69,13 @@ export const AuthController = {
     const userId = req.userId as string;
     const setData = getValidatedBody<FullNameInput>(req);
     const result = await AuthService.setName(setData, userId);
-    return sendApiResponse(res, 200, "User's name set successfully", result);
+    return sendApiResponse(res, 200, result.message, result.data);
   }),
 
   me: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId as string;
     const user = await AuthService.me(userId);
-    return sendApiResponse(res, 200, "User fetched successfully", user);
+    return sendApiResponse(res, 200, user.message, user.data);
   }),
 
   googleCallback: asyncHandler(async (req: Request, res: Response) => {
@@ -85,7 +86,8 @@ export const AuthController = {
 
     const { accessToken, refreshToken } = await SessionService.generateTokens(
       user.id,
-      user.role
+      user.role,
+      user.status
     );
 
     res.cookie("refreshToken", refreshToken, {
@@ -148,16 +150,21 @@ export const AuthController = {
   }),
 
   refreshToken: asyncHandler(async (req: Request, res: Response) => {
-    const refreshToken = getRefreshToken(req);
+    const oldRefreshToken = getRefreshToken(req);
 
-    if (!refreshToken) {
+    if (!oldRefreshToken) {
       throw new ApiError(401, "Refresh token not provided");
     }
 
-    const { accessToken } = await SessionService.refreshAccessToken(
-      refreshToken
-    );
+    // Rotating refresh token: get new access + refresh token pair
+    const { accessToken, refreshToken } =
+      await SessionService.refreshAccessToken(oldRefreshToken);
 
+    // Set both new cookies
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: ms(config.auth.refreshTokenExpiry),
+    });
     res.cookie("accessToken", accessToken, {
       ...cookieOptions,
       maxAge: ms(config.auth.accessTokenExpiry),
@@ -165,6 +172,7 @@ export const AuthController = {
 
     return sendApiResponse(res, 200, "Token refreshed successfully", {
       accessToken,
+      refreshToken,
     });
   }),
 };

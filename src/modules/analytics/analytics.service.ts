@@ -9,7 +9,8 @@ import type {
 import prisma from "../../config/prisma";
 import { SubscriptionStatus } from "../../generated/prisma/client";
 
-// Check if user has PRO access (ACTIVE or CANCELLED but not expired)
+// Check if user has PRO access
+// Access granted if: ACTIVE or CANCELLED subscription that hasn't expired
 async function hasActiveSubscription(userId: string): Promise<boolean> {
   const sub = await prisma.subscription.findUnique({
     where: { userId },
@@ -19,6 +20,7 @@ async function hasActiveSubscription(userId: string): Promise<boolean> {
   if (!sub) return false;
 
   const notExpired = sub.expiresAt > new Date();
+
   // ACTIVE or CANCELLED subscriptions have access until expiry
   return (
     (sub.status === SubscriptionStatus.ACTIVE ||
@@ -103,9 +105,17 @@ export class AnalyticsService {
     requirePro(isPro, "Spending trends");
 
     const trends = await AnalyticsRepository.getTrends(userId, query.months);
-    const avgIncome = trends.reduce((s, t) => s + t.income, 0) / trends.length;
+
+    // Guard against division by zero
+    const trendCount = trends.length;
+    const avgIncome =
+      trendCount > 0
+        ? trends.reduce((s, t) => s + t.income, 0) / trendCount
+        : 0;
     const avgExpense =
-      trends.reduce((s, t) => s + t.expense, 0) / trends.length;
+      trendCount > 0
+        ? trends.reduce((s, t) => s + t.expense, 0) / trendCount
+        : 0;
     const sorted = [...trends].sort((a, b) => b.netBalance - a.netBalance);
 
     return {

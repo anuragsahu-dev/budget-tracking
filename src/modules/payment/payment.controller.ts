@@ -88,7 +88,7 @@ export const PaymentController = {
       logger.warn("Webhook received without signature - rejecting");
       return sendApiResponse(res, 400, "Missing signature");
     }
-
+   
     // Verify webhook signature
     // Use rawBody preserved by middleware in app.ts for accurate signature verification
     const provider = getPaymentProvider();

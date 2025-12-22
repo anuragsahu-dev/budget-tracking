@@ -1,7 +1,7 @@
 /**
  * Email job types
  */
-export type EmailJobType = "OTP" | "PAYMENT_SUCCESS";
+export type EmailJobType = "OTP" | "PAYMENT_SUCCESS" | "SUBSCRIPTION_EXPIRING";
 
 /**
  * Base email job data
@@ -22,7 +22,7 @@ export interface OtpEmailJobData extends BaseEmailJobData {
 }
 
 /**
- * Payment success job data (for future use)
+ * Payment success job data
  */
 export interface PaymentSuccessJobData extends BaseEmailJobData {
   type: "PAYMENT_SUCCESS";
@@ -30,9 +30,25 @@ export interface PaymentSuccessJobData extends BaseEmailJobData {
   amount: number;
   currency: string;
   transactionId: string;
+  plan: string;
+  expiresAt: string; // ISO date string
+}
+
+/**
+ * Subscription expiring reminder job data
+ */
+export interface SubscriptionExpiringJobData extends BaseEmailJobData {
+  type: "SUBSCRIPTION_EXPIRING";
+  userName: string;
+  plan: string;
+  expiresAt: string; // ISO date string
+  daysRemaining: number;
 }
 
 /**
  * Union type of all email job data
  */
-export type EmailJobData = OtpEmailJobData | PaymentSuccessJobData;
+export type EmailJobData =
+  | OtpEmailJobData
+  | PaymentSuccessJobData
+  | SubscriptionExpiringJobData;

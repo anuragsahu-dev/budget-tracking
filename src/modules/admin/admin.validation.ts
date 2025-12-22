@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { ulidSchema } from "../../validations/common.schema";
 import {
-  UserRole,
   UserStatus,
   PaymentStatus,
   SubscriptionPlan,
+  SubscriptionStatus,
 } from "../../generated/prisma/client";
 
 // Extract enum values for Zod compatibility
@@ -61,7 +61,6 @@ export type SystemCategoryIdParam = z.infer<typeof systemCategoryIdParamSchema>;
 // ========== USER MANAGEMENT SCHEMAS ==========
 
 // Extract enum values for Zod compatibility
-const userRoleValues = Object.values(UserRole) as [UserRole, ...UserRole[]];
 const userStatusValues = Object.values(UserStatus) as [
   UserStatus,
   ...UserStatus[]
@@ -80,7 +79,6 @@ export const updateUserStatusSchema = z.object({
 export type UpdateUserStatusInput = z.infer<typeof updateUserStatusSchema>;
 
 export const listUsersQuerySchema = z.object({
-  role: z.enum(userRoleValues).optional(),
   status: z.enum(userStatusValues).optional(),
   search: z.string().trim().max(100).optional(),
   page: z.coerce
@@ -140,6 +138,15 @@ export const paymentIdParamSchema = z.object({
 
 export type PaymentIdParam = z.infer<typeof paymentIdParamSchema>;
 
+// Admin update payment (for manual intervention)
+export const updatePaymentSchema = z.object({
+  status: z.enum(paymentStatusValues).optional(),
+  subscriptionId: z.string().optional(),
+  failureReason: z.string().max(500).optional().nullable(),
+});
+
+export type UpdatePaymentInput = z.infer<typeof updatePaymentSchema>;
+
 // ========== PLAN PRICING SCHEMAS ==========
 
 const currencySchema = z
@@ -180,3 +187,61 @@ export const planPricingIdParamSchema = z.object({
 });
 
 export type PlanPricingIdParam = z.infer<typeof planPricingIdParamSchema>;
+
+// ========== SUBSCRIPTION MANAGEMENT SCHEMAS ==========
+
+const subscriptionStatusValues = Object.values(SubscriptionStatus) as [
+  SubscriptionStatus,
+  ...SubscriptionStatus[]
+];
+
+export const listSubscriptionsQuerySchema = z.object({
+  status: z.enum(subscriptionStatusValues).optional(),
+  plan: z.enum(subscriptionPlanValues).optional(),
+  expiringWithinDays: z.coerce.number().int().positive().optional(),
+  page: z.coerce
+    .number()
+    .int()
+    .positive("Page must be a positive integer")
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .positive("Limit must be a positive integer")
+    .max(100, "Limit cannot exceed 100")
+    .default(20),
+  sortBy: z.enum(["createdAt", "expiresAt"]).default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export type ListSubscriptionsQuery = z.infer<
+  typeof listSubscriptionsQuerySchema
+>;
+
+export const subscriptionIdParamSchema = z.object({
+  id: ulidSchema,
+});
+
+export type SubscriptionIdParam = z.infer<typeof subscriptionIdParamSchema>;
+
+export const updateSubscriptionSchema = z.object({
+  status: z.enum(subscriptionStatusValues).optional(),
+  plan: z.enum(subscriptionPlanValues).optional(),
+  extendDays: z
+    .number()
+    .int()
+    .positive("Extension days must be positive")
+    .optional(),
+  expiresAt: z.coerce.date().optional(), // Set exact expiry date
+});
+
+export type UpdateSubscriptionInput = z.infer<typeof updateSubscriptionSchema>;
+
+// Admin create subscription (for manual intervention when payment succeeded but subscription failed)
+export const createSubscriptionSchema = z.object({
+  userId: ulidSchema,
+  plan: z.enum(subscriptionPlanValues),
+  expiresAt: z.coerce.date(),
+});
+
+export type CreateSubscriptionInput = z.infer<typeof createSubscriptionSchema>;

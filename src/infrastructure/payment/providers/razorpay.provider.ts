@@ -139,6 +139,13 @@ export class RazorpayProvider implements IPaymentProvider {
 
       switch (event.event) {
         case "payment.captured":
+          if (!event.payload.payment) {
+            return {
+              success: false,
+              event: event.event,
+              error: "Missing payment payload",
+            };
+          }
           return {
             success: true,
             event: "payment.captured",
@@ -148,6 +155,13 @@ export class RazorpayProvider implements IPaymentProvider {
           };
 
         case "payment.failed":
+          if (!event.payload.payment) {
+            return {
+              success: false,
+              event: event.event,
+              error: "Missing payment payload",
+            };
+          }
           return {
             success: true,
             event: "payment.failed",
@@ -157,6 +171,13 @@ export class RazorpayProvider implements IPaymentProvider {
           };
 
         case "refund.created":
+          if (!event.payload.refund) {
+            return {
+              success: false,
+              event: event.event,
+              error: "Missing refund payload",
+            };
+          }
           return {
             success: true,
             event: "refund.created",
@@ -185,7 +206,7 @@ export class RazorpayProvider implements IPaymentProvider {
 interface RazorpayWebhookEvent {
   event: string;
   payload: {
-    payment: {
+    payment?: {
       entity: {
         id: string;
         order_id: string;
@@ -196,7 +217,7 @@ interface RazorpayWebhookEvent {
         error_description?: string;
       };
     };
-    refund: {
+    refund?: {
       entity: {
         id: string;
         payment_id: string;

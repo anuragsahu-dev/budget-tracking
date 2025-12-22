@@ -6,7 +6,7 @@ import { ApiError } from "../../middlewares/error.middleware";
 import logger from "../../config/logger";
 import { SessionRepository } from "./session.repository";
 import type { CookieOptions } from "express";
-import type { UserRole } from "../../generated/prisma/client";
+import type { UserRole, UserStatus } from "../../generated/prisma/client";
 import type { TokenPair, DecodedRefreshToken } from "./session.types";
 
 const isProd = config.server.nodeEnv === "production";
@@ -28,16 +28,24 @@ function calculateRefreshTokenExpiry(): Date {
 }
 
 export class SessionService {
-  private static readonly MAX_SESSIONS_PER_USER = 5;
+  private static readonly MAX_SESSIONS_PER_USER = 10;
 
   static async generateTokens(
     userId: string,
-    role: UserRole
+    role: UserRole,
+    status: UserStatus
   ): Promise<TokenPair> {
     const activeCount = await SessionRepository.countActiveSessions(userId);
     if (activeCount >= this.MAX_SESSIONS_PER_USER) {
-      await SessionRepository.revokeOldestSession(userId);
-      logger.info("Revoked oldest session due to session limit", { userId });
+      const revoked = await SessionRepository.revokeOldestSession(userId);
+      if (revoked) {
+        logger.info("Revoked oldest session due to session limit", { userId });
+      } else {
+        logger.warn(
+          "Failed to revoke oldest session during session limit enforcement",
+          { userId }
+        );
+      }
     }
 
     const refreshToken = jwt.sign(
@@ -58,8 +66,9 @@ export class SessionService {
       throw new ApiError(sessionResult.statusCode, sessionResult.message);
     }
 
+    // Include status in access token for fast auth check
     const accessToken = jwt.sign(
-      { id: userId, role },
+      { id: userId, role, status },
       config.auth.accessTokenSecret,
       { expiresIn: config.auth.accessTokenExpiry }
     );
@@ -69,9 +78,15 @@ export class SessionService {
     return { accessToken, refreshToken };
   }
 
-  static async refreshAccessToken(
-    refreshToken: string
-  ): Promise<{ accessToken: string; userId: string }> {
+  /**
+   * Rotating Refresh Token Strategy:
+   * 1. Validate the old refresh token
+   * 2. Check user status (reject if not ACTIVE)
+   * 3. Revoke the old session
+   * 4. Generate new token pair (access + refresh)
+   * This extends the user's session on each refresh (sliding window)
+   */
+  static async refreshAccessToken(refreshToken: string): Promise<TokenPair> {
     try {
       const decoded = jwt.verify(
         refreshToken,
@@ -87,13 +102,48 @@ export class SessionService {
         throw new ApiError(401, "Invalid or expired refresh token");
       }
 
-      const accessToken = jwt.sign(
-        { id: decoded.id },
-        config.auth.accessTokenSecret,
-        { expiresIn: config.auth.accessTokenExpiry }
+      // Check user status - reject if not ACTIVE
+      const { UserStatus } = await import("../../generated/prisma/client");
+      if (session.user.status !== UserStatus.ACTIVE) {
+        // Revoke all sessions for this user
+        await SessionRepository.revokeAllUserSessions(session.user.id);
+
+        logger.warn("Token refresh rejected - user not active", {
+          userId: session.user.id,
+          status: session.user.status,
+        });
+
+        throw new ApiError(
+          403,
+          "Your account is not active. Please contact support."
+        );
+      }
+
+      // Revoke the old session (rotate the token)
+      // Note: We don't block on failure — old session will expire naturally
+      const revokeResult = await SessionRepository.revokeSession(session.id);
+      if (!revokeResult.success) {
+        logger.warn("Failed to revoke old session during token rotation", {
+          userId: decoded.id,
+          sessionId: session.id,
+          error: revokeResult.error,
+        });
+      } else {
+        logger.info("Old session revoked for token rotation", {
+          userId: decoded.id,
+        });
+      }
+
+      // Generate new token pair with current status
+      const tokens = await this.generateTokens(
+        session.user.id,
+        session.user.role,
+        session.user.status
       );
 
-      return { accessToken, userId: decoded.id };
+      logger.info("Tokens rotated successfully", { userId: decoded.id });
+
+      return tokens;
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
         logger.warn("Refresh token expired", { error: "TOKEN_EXPIRED" });
@@ -151,34 +201,4 @@ export class SessionService {
 
     return result.data;
   }
-
-  static async getActiveSessions(userId: string) {
-    const sessions = await SessionRepository.getActiveSessionsForUser(userId);
-    return sessions.map((session) => ({
-      id: session.id,
-      createdAt: session.createdAt,
-      expireAt: session.expireAt,
-    }));
-  }
-
-  static async revokeSession(sessionId: string, userId: string): Promise<void> {
-    const session = await SessionRepository.findSessionById(sessionId);
-
-    if (!session) {
-      throw new ApiError(404, "Session not found");
-    }
-
-    // Authorization check - user can only revoke their own sessions
-    if (session.userId !== userId) {
-      throw new ApiError(403, "Not authorized to revoke this session");
-    }
-
-    const result = await SessionRepository.revokeSession(sessionId);
-
-    if (!result.success) {
-      throw new ApiError(result.statusCode, result.message);
-    }
-  }
 }
-
-export const generateAccessRefreshToken = SessionService.generateTokens;

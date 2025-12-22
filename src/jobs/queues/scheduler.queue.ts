@@ -6,7 +6,7 @@ const QUEUE_NAME = "scheduler";
 
 /**
  * Scheduler queue for recurring/scheduled jobs
- * Uses BullMQ's repeatable jobs feature for cluster-safe execution
+ * Uses BullMQ's upsertJobScheduler for cluster-safe scheduled execution
  */
 export const schedulerQueue = new Queue(QUEUE_NAME, {
   connection: bullmqConnection,
@@ -26,91 +26,133 @@ export const schedulerQueue = new Queue(QUEUE_NAME, {
  */
 export type ScheduledJobType =
   | "expire-subscriptions"
+  | "subscription-expiring-reminder"
+  | "cleanup-pending-payments"
   | "cleanup-expired-otps"
   | "cleanup-old-sessions";
 
+// Time constants (in milliseconds)
+const ONE_HOUR = 60 * 60 * 1000;
+const SIX_HOURS = 6 * ONE_HOUR;
+const ONE_DAY = 24 * ONE_HOUR;
+
 /**
- * Setup repeatable jobs
+ * Setup job schedulers using the modern upsertJobScheduler API
  * This should be called ONCE during application startup
- * BullMQ handles deduplication - calling this multiple times is safe
+ * upsertJobScheduler is idempotent - calling multiple times is safe
  */
 export async function setupScheduledJobs(): Promise<void> {
   try {
-    // Remove any existing repeatable jobs first (clean slate on deploy)
-    const existingJobs = await schedulerQueue.getRepeatableJobs();
-    for (const job of existingJobs) {
-      await schedulerQueue.removeRepeatableByKey(job.key);
-    }
-
     // ============================================================
     // 1. EXPIRE SUBSCRIPTIONS - Run every hour
     // Marks subscriptions as EXPIRED when expiresAt < now
     // ============================================================
-    await schedulerQueue.add(
-      "expire-subscriptions",
-      { description: "Mark expired subscriptions" },
+    await schedulerQueue.upsertJobScheduler(
+      "expire-subscriptions", // Unique scheduler ID
       {
-        repeat: {
-          every: 60 * 60 * 1000, // Every 1 hour (in milliseconds)
-        },
-        jobId: "expire-subscriptions", // Ensures only one repeatable job
+        every: ONE_HOUR,
+      },
+      {
+        name: "expire-subscriptions",
+        data: { description: "Mark expired subscriptions" },
       }
     );
 
     // ============================================================
-    // 2. CLEANUP EXPIRED OTPs - Run every 6 hours
+    // 2. SUBSCRIPTION EXPIRING REMINDER - Run every day
+    // Email users whose subscription expires in 7 days
+    // ============================================================
+    await schedulerQueue.upsertJobScheduler(
+      "subscription-expiring-reminder",
+      {
+        every: ONE_DAY,
+      },
+      {
+        name: "subscription-expiring-reminder",
+        data: {
+          description: "Send reminder emails for expiring subscriptions",
+        },
+      }
+    );
+
+    // ============================================================
+    // 3. CLEANUP PENDING PAYMENTS - Run every day
+    // Mark payments that have been PENDING for 24+ hours as FAILED
+    // ============================================================
+    await schedulerQueue.upsertJobScheduler(
+      "cleanup-pending-payments",
+      {
+        every: ONE_DAY,
+      },
+      {
+        name: "cleanup-pending-payments",
+        data: { description: "Mark abandoned pending payments as failed" },
+      }
+    );
+
+    // ============================================================
+    // 4. CLEANUP EXPIRED OTPs - Run every 6 hours
     // Deletes OTP records older than their expiry
     // ============================================================
-    await schedulerQueue.add(
+    await schedulerQueue.upsertJobScheduler(
       "cleanup-expired-otps",
-      { description: "Delete expired OTP records" },
       {
-        repeat: {
-          every: 6 * 60 * 60 * 1000, // Every 6 hours
-        },
-        jobId: "cleanup-expired-otps",
+        every: SIX_HOURS,
+      },
+      {
+        name: "cleanup-expired-otps",
+        data: { description: "Delete expired OTP records" },
       }
     );
 
     // ============================================================
-    // 3. CLEANUP OLD SESSIONS - Run every day
+    // 5. CLEANUP OLD SESSIONS - Run every day
     // Deletes sessions older than 30 days
     // ============================================================
-    await schedulerQueue.add(
+    await schedulerQueue.upsertJobScheduler(
       "cleanup-old-sessions",
-      { description: "Delete old session records" },
       {
-        repeat: {
-          every: 24 * 60 * 60 * 1000, // Every 24 hours
-        },
-        jobId: "cleanup-old-sessions",
+        every: ONE_DAY,
+      },
+      {
+        name: "cleanup-old-sessions",
+        data: { description: "Delete old session records" },
       }
     );
 
-    const jobs = await schedulerQueue.getRepeatableJobs();
-    logger.info("Scheduled jobs configured", {
-      jobs: jobs.map((j) => ({ name: j.name, every: j.every })),
+    // Log all configured schedulers
+    const schedulers = await schedulerQueue.getJobSchedulers();
+    
+    logger.info("Job schedulers configured", {
+      count: schedulers.length,
+      schedulers: schedulers.map((s) => ({
+        id: s.id,
+        name: s.name,
+        every: s.every,
+        next: s.next ? new Date(s.next).toISOString() : null,
+      })),
     });
   } catch (error) {
-    logger.error("Failed to setup scheduled jobs", { error });
+    logger.error("Failed to setup job schedulers", { error });
     throw error;
   }
 }
 
 /**
- * Get status of all scheduled jobs
+ * Get status of all job schedulers
  */
 export async function getScheduledJobsStatus() {
-  const repeatableJobs = await schedulerQueue.getRepeatableJobs();
+  const schedulers = await schedulerQueue.getJobSchedulers();
   const waiting = await schedulerQueue.getWaiting();
   const active = await schedulerQueue.getActive();
   const failed = await schedulerQueue.getFailed();
 
   return {
-    repeatable: repeatableJobs.map((j) => ({
-      name: j.name,
-      every: j.every,
-      next: j.next ? new Date(j.next).toISOString() : null,
+    schedulers: schedulers.map((s) => ({
+      id: s.id,
+      name: s.name,
+      every: s.every,
+      next: s.next ? new Date(s.next).toISOString() : null,
     })),
     counts: {
       waiting: waiting.length,

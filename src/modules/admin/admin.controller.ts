@@ -20,6 +20,11 @@ import type {
   CreatePlanPricingInput,
   UpdatePlanPricingInput,
   PlanPricingIdParam,
+  ListSubscriptionsQuery,
+  SubscriptionIdParam,
+  UpdateSubscriptionInput,
+  CreateSubscriptionInput,
+  UpdatePaymentInput,
 } from "./admin.validation";
 
 export const AdminController = {
@@ -37,9 +42,10 @@ export const AdminController = {
   }),
 
   createSystemCategory: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const data = getValidatedBody<CreateSystemCategoryInput>(req);
 
-    const category = await AdminService.createSystemCategory(data);
+    const category = await AdminService.createSystemCategory(adminId, data);
 
     return sendApiResponse(
       res,
@@ -50,10 +56,11 @@ export const AdminController = {
   }),
 
   updateSystemCategory: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const { id } = getValidatedParams<SystemCategoryIdParam>(req);
     const data = getValidatedBody<UpdateSystemCategoryInput>(req);
 
-    const category = await AdminService.updateSystemCategory(id, data);
+    const category = await AdminService.updateSystemCategory(adminId, id, data);
 
     return sendApiResponse(
       res,
@@ -64,9 +71,10 @@ export const AdminController = {
   }),
 
   deleteSystemCategory: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const { id } = getValidatedParams<SystemCategoryIdParam>(req);
 
-    const result = await AdminService.deleteSystemCategory(id);
+    const result = await AdminService.deleteSystemCategory(adminId, id);
 
     return sendApiResponse(res, 200, result.message, null);
   }),
@@ -103,6 +111,15 @@ export const AdminController = {
     const user = await AdminService.updateUserStatus(id, adminId, data);
 
     return sendApiResponse(res, 200, "User status updated successfully", user);
+  }),
+
+  deleteUser: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
+    const { id } = getValidatedParams<UserIdParam>(req);
+
+    const result = await AdminService.deleteUser(id, adminId);
+
+    return sendApiResponse(res, 200, "User permanently deleted", result);
   }),
 
   // ========== STATISTICS ENDPOINTS ==========
@@ -166,9 +183,10 @@ export const AdminController = {
   }),
 
   createPlanPricing: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const data = getValidatedBody<CreatePlanPricingInput>(req);
 
-    const pricing = await AdminService.createPlanPricing(data);
+    const pricing = await AdminService.createPlanPricing(adminId, data);
 
     return sendApiResponse(
       res,
@@ -179,10 +197,11 @@ export const AdminController = {
   }),
 
   updatePlanPricing: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const { id } = getValidatedParams<PlanPricingIdParam>(req);
     const data = getValidatedBody<UpdatePlanPricingInput>(req);
 
-    const pricing = await AdminService.updatePlanPricing(id, data);
+    const pricing = await AdminService.updatePlanPricing(adminId, id, data);
 
     return sendApiResponse(
       res,
@@ -193,10 +212,118 @@ export const AdminController = {
   }),
 
   deletePlanPricing: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
     const { id } = getValidatedParams<PlanPricingIdParam>(req);
 
-    const result = await AdminService.deletePlanPricing(id);
+    const result = await AdminService.deletePlanPricing(adminId, id);
 
     return sendApiResponse(res, 200, result.message, null);
+  }),
+
+  // ========== SUBSCRIPTION MANAGEMENT ENDPOINTS ==========
+
+  getAllSubscriptions: asyncHandler(async (req: Request, res: Response) => {
+    const query = getValidatedQuery<ListSubscriptionsQuery>(req);
+
+    const result = await AdminService.getAllSubscriptions(query);
+
+    return sendApiResponse(
+      res,
+      200,
+      "Subscriptions fetched successfully",
+      result.subscriptions,
+      result.meta
+    );
+  }),
+
+  getSubscriptionById: asyncHandler(async (req: Request, res: Response) => {
+    const { id } = getValidatedParams<SubscriptionIdParam>(req);
+
+    const subscription = await AdminService.getSubscriptionById(id);
+
+    return sendApiResponse(
+      res,
+      200,
+      "Subscription fetched successfully",
+      subscription
+    );
+  }),
+
+  updateSubscription: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
+    const { id } = getValidatedParams<SubscriptionIdParam>(req);
+    const data = getValidatedBody<UpdateSubscriptionInput>(req);
+
+    const subscription = await AdminService.updateSubscription(
+      adminId,
+      id,
+      data
+    );
+
+    return sendApiResponse(
+      res,
+      200,
+      "Subscription updated successfully",
+      subscription
+    );
+  }),
+
+  getSubscriptionStats: asyncHandler(async (_req: Request, res: Response) => {
+    const stats = await AdminService.getSubscriptionStats();
+
+    return sendApiResponse(
+      res,
+      200,
+      "Subscription statistics fetched successfully",
+      stats
+    );
+  }),
+
+  /**
+   * Create subscription for user (manual intervention)
+   * POST /api/v1/admin/subscriptions
+   */
+  createSubscription: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
+    const data = getValidatedBody<CreateSubscriptionInput>(req);
+
+    const subscription = await AdminService.createSubscriptionForUser(
+      adminId,
+      data
+    );
+
+    return sendApiResponse(
+      res,
+      201,
+      "Subscription created successfully",
+      subscription
+    );
+  }),
+
+  /**
+   * Update payment (manual intervention)
+   * PATCH /api/v1/admin/payments/:id
+   */
+  updatePayment: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
+    const { id } = getValidatedParams<PaymentIdParam>(req);
+    const data = getValidatedBody<UpdatePaymentInput>(req);
+
+    const payment = await AdminService.updatePayment(adminId, id, data);
+
+    return sendApiResponse(res, 200, "Payment updated successfully", payment);
+  }),
+
+  // ========== FORCE LOGOUT ENDPOINT ==========
+
+  forceLogoutUser: asyncHandler(async (req: Request, res: Response) => {
+    const adminId = req.userId as string;
+    const { id } = getValidatedParams<UserIdParam>(req);
+
+    const result = await AdminService.forceLogoutUser(id, adminId);
+
+    return sendApiResponse(res, 200, result.message, {
+      revokedCount: result.revokedCount,
+    });
   }),
 };

@@ -4,9 +4,6 @@ import type {
 } from "../../generated/prisma/client";
 import type { CategorySelect } from "../../types/common.types";
 
-// Re-export for convenience
-export type { CategorySelect };
-
 export type TransactionWithCategory = Transaction & {
   category: CategorySelect | null;
 };

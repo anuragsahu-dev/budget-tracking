@@ -1,11 +1,14 @@
 import { Worker, Job } from "bullmq";
 import { bullmqConnection } from "../../config/redis";
 import logger from "../../config/logger";
+import { config } from "../../config/config";
 import { sendEmail } from "../../utils/mail";
+import { formatCurrency } from "../../utils/currency";
 import type {
   EmailJobData,
   OtpEmailJobData,
   PaymentSuccessJobData,
+  SubscriptionExpiringJobData,
 } from "../types";
 
 const QUEUE_NAME = "email";
@@ -48,23 +51,79 @@ function generateOtpEmailContent(data: OtpEmailJobData) {
  * Generate payment success email content
  */
 function generatePaymentSuccessContent(data: PaymentSuccessJobData) {
+  const formattedAmount = formatCurrency(data.amount, data.currency);
+  const expiryDate = new Date(data.expiresAt).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   return {
     body: {
       name: data.userName,
-      intro: `Your payment of ${data.currency} ${data.amount.toFixed(
-        2
-      )} was successful!`,
+      intro: [
+        `Your payment of ${formattedAmount} was successful!`,
+        `Your ${data.plan.replace("_", " ")} subscription is now active.`,
+      ],
       table: {
         data: [
-          { key: "Transaction ID", value: data.transactionId },
+          { Item: "Transaction ID", Details: data.transactionId },
           {
-            key: "Amount",
-            value: `${data.currency} ${data.amount.toFixed(2)}`,
+            Item: "Amount Paid",
+            Details: formattedAmount,
           },
-          { key: "Status", value: "Completed" },
+          { Item: "Plan", Details: data.plan.replace("_", " ") },
+          { Item: "Valid Until", Details: expiryDate },
+          { Item: "Status", Details: "Active ✓" },
         ],
       },
-      outro: "Thank you for your purchase!",
+      outro: [
+        "Thank you for subscribing! You now have access to all PRO features.",
+        "If you have any questions, feel free to contact our support team.",
+      ],
+    },
+  };
+}
+
+/**
+ * Generate subscription expiring reminder email content
+ */
+function generateSubscriptionExpiringContent(
+  data: SubscriptionExpiringJobData
+) {
+  const expiryDate = new Date(data.expiresAt).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return {
+    body: {
+      name: data.userName,
+      intro: [
+        `Your ${data.plan.replace("_", " ")} subscription is expiring soon!`,
+        `You have ${data.daysRemaining} days remaining until your subscription ends.`,
+      ],
+      table: {
+        data: [
+          { Item: "Current Plan", Details: data.plan.replace("_", " ") },
+          { Item: "Expires On", Details: expiryDate },
+          { Item: "Days Remaining", Details: `${data.daysRemaining} days` },
+        ],
+      },
+      action: {
+        instructions:
+          "To continue enjoying PRO features without interruption, please renew your subscription:",
+        button: {
+          color: "#22BC66",
+          text: "Renew Now",
+          link: `${config.server.clientUrl}/subscription`,
+        },
+      },
+      outro: [
+        "If you don't renew, your account will be downgraded to the free plan.",
+        "Thank you for being a valued subscriber!",
+      ],
     },
   };
 }
@@ -90,8 +149,15 @@ async function processEmailJob(job: Job<EmailJobData>): Promise<void> {
     case "PAYMENT_SUCCESS":
       mailgenContent = generatePaymentSuccessContent(data);
       break;
-    default:
-      throw new Error(`Unknown email type: ${(data as EmailJobData).type}`);
+    case "SUBSCRIPTION_EXPIRING":
+      mailgenContent = generateSubscriptionExpiringContent(data);
+      break;
+    default: {
+      const _exhaustiveCheck: never = data;
+      throw new Error(
+        `Unknown email type: ${(_exhaustiveCheck as EmailJobData).type}`
+      );
+    }
   }
 
   await sendEmail({

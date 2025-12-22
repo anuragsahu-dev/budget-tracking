@@ -6,9 +6,6 @@ import type {
   MonthlyTrend,
 } from "./analytics.types";
 
-// Re-export types for consumers
-export type { MonthlySummary, CategoryBreakdown, MonthlyTrend };
-
 export class AnalyticsRepository {
   /**
    * Get monthly summary for a user
@@ -179,25 +176,35 @@ export class AnalyticsRepository {
     months: number
   ): Promise<MonthlyTrend[]> {
     const now = new Date();
-    const trends: MonthlyTrend[] = [];
 
-    for (let i = months - 1; i >= 0; i--) {
-      const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const month = targetDate.getMonth() + 1;
-      const year = targetDate.getFullYear();
+    // Build array of month/year pairs to fetch
+    const monthsToFetch = Array.from({ length: months }, (_, i) => {
+      const targetDate = new Date(
+        now.getFullYear(),
+        now.getMonth() - (months - 1 - i),
+        1
+      );
+      return {
+        month: targetDate.getMonth() + 1,
+        year: targetDate.getFullYear(),
+      };
+    });
 
-      const summary = await this.getMonthlySummary(userId, month, year);
+    // Fetch all months in parallel for better performance
+    const summaries = await Promise.all(
+      monthsToFetch.map(({ month, year }) =>
+        this.getMonthlySummary(userId, month, year)
+      )
+    );
 
-      trends.push({
-        month,
-        year,
-        income: summary.totalIncome,
-        expense: summary.totalExpense,
-        netBalance: summary.netBalance,
-      });
-    }
-
-    return trends;
+    // Transform to MonthlyTrend format
+    return summaries.map((summary) => ({
+      month: summary.month,
+      year: summary.year,
+      income: summary.totalIncome,
+      expense: summary.totalExpense,
+      netBalance: summary.netBalance,
+    }));
   }
 
   /**
@@ -213,7 +220,7 @@ export class AnalyticsRepository {
     totalSpent: number;
     remaining: number | null;
     categories: {
-      categoryId: string;
+      categoryId: string | null;
       categoryName: string;
       budgeted: number;
       spent: number;
@@ -251,7 +258,8 @@ export class AnalyticsRepository {
       _sum: { amount: true },
     });
 
-    const spendingMap = new Map(
+    // Create spending map with proper handling of null categoryId
+    const spendingMap = new Map<string | null, number>(
       spending.map((s) => [s.categoryId, Number(s._sum.amount ?? 0)])
     );
 
@@ -272,7 +280,20 @@ export class AnalyticsRepository {
 
     const totalBudget = budget.totalLimit ? Number(budget.totalLimit) : null;
 
-    const categories = budget.allocations.map((alloc) => {
+    // Track which categories are in the budget
+    const budgetedCategoryIds = new Set(
+      budget.allocations.map((a) => a.categoryId)
+    );
+
+    // Build categories array from budget allocations
+    const categories: {
+      categoryId: string | null;
+      categoryName: string;
+      budgeted: number;
+      spent: number;
+      remaining: number;
+      percentUsed: number;
+    }[] = budget.allocations.map((alloc) => {
       const budgeted = Number(alloc.amount);
       const spent = spendingMap.get(alloc.categoryId) ?? 0;
       const remaining = budgeted - spent;
@@ -286,6 +307,38 @@ export class AnalyticsRepository {
         percentUsed: budgeted > 0 ? Math.round((spent / budgeted) * 100) : 0,
       };
     });
+
+    // Add unbudgeted spending (categories with spending but not in budget)
+    let unbudgetedSpent = 0;
+    for (const [categoryId, amount] of spendingMap) {
+      if (categoryId !== null && !budgetedCategoryIds.has(categoryId)) {
+        unbudgetedSpent += amount;
+      }
+    }
+
+    if (unbudgetedSpent > 0) {
+      categories.push({
+        categoryId: null,
+        categoryName: "Other (Unbudgeted)",
+        budgeted: 0,
+        spent: unbudgetedSpent,
+        remaining: -unbudgetedSpent,
+        percentUsed: 0,
+      });
+    }
+
+    // Add uncategorized spending (transactions without a category)
+    const uncategorizedSpent = spendingMap.get(null) ?? 0;
+    if (uncategorizedSpent > 0) {
+      categories.push({
+        categoryId: null,
+        categoryName: "Uncategorized",
+        budgeted: 0,
+        spent: uncategorizedSpent,
+        remaining: -uncategorizedSpent,
+        percentUsed: 0,
+      });
+    }
 
     return {
       budgetId: budget.id,

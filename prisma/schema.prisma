@@ -31,7 +31,7 @@ model User {
   password String?
 
   avatarUrl String? @default("default-avatar.png")
-  avatarId  String? @db.VarChar(80) @default("default-avatarId")
+  avatarId  String? @default("default-avatarId") @db.VarChar(80)
 
   isEmailVerified Boolean @default(false)
 
@@ -83,7 +83,7 @@ model Transaction {
   date        DateTime        @default(now())
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category? @relation(fields: [categoryId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -117,7 +117,7 @@ model BudgetAllocation {
   amount     Decimal @db.Decimal(12, 2) // allocated amount for this category in that month
 
   budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   @@unique([budgetId, categoryId]) // one allocation per category per budget/month
 }
@@ -133,8 +133,8 @@ model Otp {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, email])
-  @@index([expiresAt])
+  @@index([userId, email]) // it apply composite index on the userId and email. this is helpful when you search with both userId and email
+  @@index([expiresAt]) // it apply index on the expiresAt. this is helpful when you search with expiresAt
 }
 
 model Session {
@@ -160,7 +160,6 @@ enum SubscriptionPlan {
 enum SubscriptionStatus {
   ACTIVE
   EXPIRED
-  PENDING
   CANCELLED
 }
 
@@ -177,7 +176,7 @@ model Subscription {
   userId String @unique // One subscription per user
 
   plan   SubscriptionPlan // PRO_MONTHLY, PRO_YEARLY
-  status SubscriptionStatus // ACTIVE, EXPIRED, PENDING, CANCELLED
+  status SubscriptionStatus // ACTIVE, EXPIRED, CANCELLED
 
   // When the current period ends (user must pay again before this)
   expiresAt DateTime
@@ -222,13 +221,13 @@ model Payment {
 
   paidAt    DateTime?
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
-  @@index([providerOrderId]) // For Razorpay webhook verification
 }
 
 // ======= PLAN PRICING (admin-managed subscription prices) =======

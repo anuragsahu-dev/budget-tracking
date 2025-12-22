@@ -22,20 +22,25 @@ export class SessionRepository {
     }
   }
 
-  static async findActiveSessionByTokenHash(
-    refreshTokenHash: string
-  ): Promise<Session | null> {
+  static async findActiveSessionByTokenHash(refreshTokenHash: string) {
     return prisma.session.findFirst({
       where: {
         refreshTokenHash,
         isRevoked: false,
         expireAt: { gt: new Date() },
       },
+      include: { user: { select: { id: true, role: true, status: true } } },
     });
   }
 
-  static async findSessionById(id: string): Promise<Session | null> {
-    return prisma.session.findUnique({ where: { id } });
+  static async countActiveSessions(userId: string): Promise<number> {
+    return prisma.session.count({
+      where: {
+        userId,
+        isRevoked: false,
+        expireAt: { gt: new Date() },
+      },
+    });
   }
 
   static async revokeSession(id: string): Promise<RepositoryResult<Session>> {
@@ -89,52 +94,29 @@ export class SessionRepository {
     }
   }
 
-  static async deleteExpiredSessions(): Promise<{ count: number }> {
-    const result = await prisma.session.deleteMany({
-      where: {
-        OR: [{ expireAt: { lt: new Date() } }, { isRevoked: true }],
-      },
-    });
-    return { count: result.count };
-  }
-
-  static async getActiveSessionsForUser(userId: string): Promise<Session[]> {
-    return prisma.session.findMany({
-      where: {
-        userId,
-        isRevoked: false,
-        expireAt: { gt: new Date() },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-  }
-
-  static async countActiveSessions(userId: string): Promise<number> {
-    return prisma.session.count({
-      where: {
-        userId,
-        isRevoked: false,
-        expireAt: { gt: new Date() },
-      },
-    });
-  }
-
-  static async revokeOldestSession(userId: string): Promise<void> {
-    const oldestSession = await prisma.session.findFirst({
-      where: {
-        userId,
-        isRevoked: false,
-        expireAt: { gt: new Date() },
-      },
-      orderBy: { createdAt: "asc" },
-      select: { id: true },
-    });
-
-    if (oldestSession) {
-      await prisma.session.update({
-        where: { id: oldestSession.id },
-        data: { isRevoked: true },
+  static async revokeOldestSession(userId: string): Promise<boolean> {
+    try {
+      const oldestSession = await prisma.session.findFirst({
+        where: {
+          userId,
+          isRevoked: false,
+          expireAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
       });
+
+      if (oldestSession) {
+        await prisma.session.update({
+          where: { id: oldestSession.id },
+          data: { isRevoked: true },
+        });
+        return true;
+      }
+      return false; // No session to revoke
+    } catch {
+      // Don't throw — this is a cleanup operation, not critical
+      return false;
     }
   }
 }

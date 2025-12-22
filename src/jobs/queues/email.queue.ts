@@ -54,22 +54,51 @@ export async function queueOtpEmail(
 }
 
 /**
- * Add payment success email job to queue (for future use)
+ * Add payment success email job to queue
  */
 export async function queuePaymentSuccessEmail(
   email: string,
   userName: string,
   amount: number,
   currency: string,
-  transactionId: string
+  transactionId: string,
+  plan: string,
+  expiresAt: Date
 ): Promise<void> {
   await addEmailJob({
     type: "PAYMENT_SUCCESS",
     to: email,
-    subject: "Payment Successful",
+    subject: "Payment Successful - Your Subscription is Active",
     userName,
     amount,
     currency,
     transactionId,
+    plan,
+    expiresAt: expiresAt.toISOString(),
+  });
+}
+
+/**
+ * Add subscription expiring reminder email job to queue
+ */
+export async function queueSubscriptionExpiringEmail(
+  email: string,
+  userName: string,
+  plan: string,
+  expiresAt: Date
+): Promise<void> {
+  const now = new Date();
+  const daysRemaining = Math.ceil(
+    (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  await addEmailJob({
+    type: "SUBSCRIPTION_EXPIRING",
+    to: email,
+    subject: `Your Subscription Expires in ${daysRemaining} Days`,
+    userName,
+    plan,
+    expiresAt: expiresAt.toISOString(),
+    daysRemaining,
   });
 }

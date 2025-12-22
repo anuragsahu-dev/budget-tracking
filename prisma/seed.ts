@@ -1,11 +1,15 @@
 import prisma from "../src/config/prisma";
 import { SubscriptionPlan } from "../src/generated/prisma/client";
 
+// ============================================================
+// MAIN SEED FUNCTION
+// ============================================================
 async function main() {
   console.log("🌱 Starting database seed...\n");
+  console.log("━".repeat(60));
 
   // ============================================================
-  // 1. SEED SYSTEM CATEGORIES (userId = null means system-wide)
+  // 1. SEED SYSTEM CATEGORIES
   // ============================================================
   const systemCategories = [
     { name: "Food & Drinks", slug: "food-drinks", color: "#FF6B6B" },
@@ -22,19 +26,16 @@ async function main() {
 
   console.log("📁 Seeding system categories...");
   for (const cat of systemCategories) {
-    // Check if system category exists (userId is null)
     const existing = await prisma.category.findFirst({
       where: { userId: null, slug: cat.slug },
     });
 
     if (existing) {
-      // Update existing
       await prisma.category.update({
         where: { id: existing.id },
         data: { name: cat.name, color: cat.color },
       });
     } else {
-      // Create new
       await prisma.category.create({
         data: { ...cat, userId: null },
       });
@@ -45,13 +46,13 @@ async function main() {
   );
 
   // ============================================================
-  // 2. SEED PLAN PRICING (Subscription plans with prices)
+  // 2. SEED PLAN PRICING
   // ============================================================
   const pricingData = [
     {
       plan: SubscriptionPlan.PRO_MONTHLY,
       currency: "INR",
-      amount: 49900, // ₹499 in paise
+      amount: 49900, // ₹499.00 in paise
       durationDays: 30,
       name: "PRO Monthly",
       description: "Full access to all premium features for 30 days",
@@ -60,13 +61,12 @@ async function main() {
     {
       plan: SubscriptionPlan.PRO_YEARLY,
       currency: "INR",
-      amount: 499900, // ₹4999 in paise (save ~17%)
+      amount: 499900, // ₹4999.00 in paise
       durationDays: 365,
       name: "PRO Yearly",
       description: "Full access to all premium features for 1 year - Save 17%!",
       isActive: true,
     },
-    // USD pricing (for future international support)
     {
       plan: SubscriptionPlan.PRO_MONTHLY,
       currency: "USD",
@@ -108,18 +108,21 @@ async function main() {
   // ============================================================
   // SUMMARY
   // ============================================================
-  console.log("━".repeat(50));
+  console.log("━".repeat(60));
   console.log("🎉 Database seeded successfully!");
-  console.log("━".repeat(50));
+  console.log("━".repeat(60));
 
-  const categoryCount = await prisma.category.count({
-    where: { userId: null },
-  });
-  const pricingCount = await prisma.planPricing.count();
+  const counts = {
+    systemCategories: await prisma.category.count({ where: { userId: null } }),
+    pricingPlans: await prisma.planPricing.count(),
+  };
 
-  console.log(`\n📊 Summary:`);
-  console.log(`   • System Categories: ${categoryCount}`);
-  console.log(`   • Pricing Plans: ${pricingCount}`);
+  console.log("\n📊 Database Summary:");
+  console.log("─".repeat(40));
+  console.log(`   📁 System Categories:  ${counts.systemCategories}`);
+  console.log(`    Pricing Plans:      ${counts.pricingPlans}`);
+  console.log("─".repeat(40));
+  console.log("\n✨ Seed completed!\n");
 }
 
 main()
