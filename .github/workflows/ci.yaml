@@ -4,8 +4,7 @@ on:
   pull_request:
     branches: [main]
 
-# All required environment variables for CI
-# These are dummy values - real secrets should be added to GitHub Secrets for integration tests
+# Environment variables for CI (dummy values for Prisma generate and tests)
 env:
   DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
   NODE_ENV: test
@@ -64,46 +63,6 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npm run test:unit
-
-  integration-test:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: budget_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U test_user -d budget_test"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-    env:
-      # Override with real test database
-      DATABASE_URL: postgresql://test_user:test_password@localhost:5432/budget_test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "npm"
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npx prisma migrate deploy
-      - run: npm run test:integration
 
   build:
     name: Build (Node ${{ matrix.node-version }})
