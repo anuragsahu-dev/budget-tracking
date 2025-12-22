@@ -4,6 +4,37 @@ on:
   pull_request:
     branches: [main]
 
+# All required environment variables for CI
+# These are dummy values - real secrets should be added to GitHub Secrets for integration tests
+env:
+  DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+  NODE_ENV: test
+  PORT: 3000
+  CLIENT_URL: http://localhost:3000
+  ACCESS_TOKEN_SECRET: ci-access-token-secret
+  REFRESH_TOKEN_SECRET: ci-refresh-token-secret
+  ACCESS_TOKEN_EXPIRY: 15m
+  REFRESH_TOKEN_EXPIRY: 7d
+  SMTP_HOST: smtp.example.com
+  SMTP_PORT: 587
+  SMTP_USER: test@example.com
+  SMTP_PASS: dummy-password
+  REDIS_PORT: 6379
+  REDIS_HOST: localhost
+  SALT_ROUNDS: 10
+  APP_URL: http://localhost:3000
+  FORGOT_PASSWORD_REDIRECT_URL: http://localhost:3000/reset-password
+  GOOGLE_CLIENT_ID: dummy-google-client-id
+  GOOGLE_CLIENT_SECRET: dummy-google-client-secret
+  GOOGLE_CALLBACK_URL: http://localhost:3000/auth/google/callback
+  RAZORPAY_KEY_ID: dummy-razorpay-key
+  RAZORPAY_KEY_SECRET: dummy-razorpay-secret
+  RAZORPAY_WEBHOOK_SECRET: dummy-webhook-secret
+  AWS_REGION: us-east-1
+  AWS_ACCESS_KEY_ID: dummy-aws-key
+  AWS_SECRET_ACCESS_KEY: dummy-aws-secret
+  AWS_S3_BUCKET_NAME: dummy-bucket
+
 jobs:
   lint:
     name: Lint (Node ${{ matrix.node-version }})
@@ -21,9 +52,6 @@ jobs:
       - run: npx prisma generate
       - run: npm run lint
 
-  # ============================================
-  # Unit Tests - Fast, no DB needed
-  # ============================================
   unit-test:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -37,9 +65,6 @@ jobs:
       - run: npx prisma generate
       - run: npm run test:unit
 
-  # ============================================
-  # Integration Tests - Slower, with ephemeral DB
-  # ============================================
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
@@ -67,11 +92,8 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     env:
+      # Override with real test database
       DATABASE_URL: postgresql://test_user:test_password@localhost:5432/budget_test
-      REDIS_URL: redis://localhost:6379
-      NODE_ENV: test
-      JWT_SECRET: test-jwt-secret
-      JWT_REFRESH_SECRET: test-refresh-secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -83,9 +105,6 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npm run test:integration
 
-  # ============================================
-  # Build - Matrix for compatibility
-  # ============================================
   build:
     name: Build (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
