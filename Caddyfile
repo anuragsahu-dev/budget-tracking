@@ -1,41 +1,8 @@
-# =============================================================================
-# CADDYFILE - Budget Tracker
-# Reverse proxy configuration for production
-# Replace your-api-domain.com with your actual domain
-# =============================================================================
 
-your-api-domain.com {
-    # Enable automatic HTTPS
-    
-    # Reverse proxy to the app service
-    reverse_proxy app:3000 {
-        # Load balancing for multiple replicas
-        lb_policy round_robin
-        
-        # Health checks
-        health_uri /health/live
-        health_interval 30s
-        health_timeout 10s
-        
-        # Headers
-        header_up Host {host}
-        header_up X-Real-IP {remote}
-        header_up X-Forwarded-For {remote}
-        header_up X-Forwarded-Proto {scheme}
-    }
-    
-    # Security headers
-    header {
-        X-Content-Type-Options nosniff
-        X-Frame-Options DENY
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy strict-origin-when-cross-origin
-        -Server
-    }
-    
-    # Logging
-    log {
-        output stdout
-        format json
-    }
+{
+    email anuragsahu-dev@gmail.com
+}
+
+ec2-16-171-44-83.eu-north-1.compute.amazonaws.com {
+    reverse_proxy app:3000 
 }

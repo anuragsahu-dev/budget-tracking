@@ -2,12 +2,12 @@ import Redis from "ioredis";
 import { config } from "./config";
 import logger from "./logger";
 
-const isTest = process.env.NODE_ENV === "test";
+const isTest = config.server.nodeEnv === "test";
 
 /**
  * Create Redis client based on environment:
  * - Test: Uses ioredis-mock (in-memory)
- * - Production (Upstash): Uses REDIS_URL with TLS
+ * - Production (Upstash): Uses REDIS_URL (rediss:// auto-enables TLS)
  * - Development (Docker): Uses REDIS_HOST and REDIS_PORT
  */
 function createRedisClient(): Redis {
@@ -20,10 +20,9 @@ function createRedisClient(): Redis {
   let client: Redis;
 
   // If REDIS_URL is provided (Upstash/managed Redis), use it
+  // ioredis automatically enables TLS when URL starts with "rediss://"
   if (config.redis.url) {
     client = new Redis(config.redis.url, {
-      // Upstash requires TLS
-      tls: config.redis.url.includes("upstash") ? {} : undefined,
       maxRetriesPerRequest: 3,
       retryStrategy: (times) => {
         if (times > 3) return null;
@@ -56,7 +55,7 @@ function createRedisClient(): Redis {
 
 /**
  * BullMQ connection options
- * - Upstash: Uses REDIS_URL with TLS
+ * - Upstash: Uses REDIS_URL (rediss:// auto-enables TLS)
  * - Local: Uses HOST/PORT
  */
 export const bullmqConnection = isTest
@@ -65,7 +64,6 @@ export const bullmqConnection = isTest
   ? {
       // Upstash connection for BullMQ
       connection: new Redis(config.redis.url, {
-        tls: config.redis.url.includes("upstash") ? {} : undefined,
         maxRetriesPerRequest: null,
       }),
     }
