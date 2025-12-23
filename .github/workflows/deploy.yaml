@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: your-dockerhub-username/budget-tracker
+  IMAGE_NAME: as3305100/budget-tracker
   IMAGE_TAG: build-${{ github.sha }}
 
 jobs:
@@ -89,6 +89,7 @@ jobs:
             sudo docker stack deploy -c compose.yaml budget-tracker
 
             # Health check
+            # budget-tracker is stack name and app is compose.yaml service name
             echo "Checking service health..."
             SERVICE_NAME="budget-tracker_app"
 

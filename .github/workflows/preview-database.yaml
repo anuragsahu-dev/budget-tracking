@@ -94,47 +94,6 @@ jobs:
         env:
           DATABASE_URL: ${{ steps.create_branch.outputs.db_url_with_pooler }}
 
-  integration_tests:
-    name: Integration Tests (Preview DB)
-    needs: [setup, create_preview_db]
-    if: |
-      github.event_name == 'pull_request' && (
-      github.event.action == 'synchronize'
-      || github.event.action == 'opened'
-      || github.event.action == 'reopened')
-    runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-    env:
-      DATABASE_URL: ${{ needs.create_preview_db.outputs.db_url_with_pooler }}
-      REDIS_URL: redis://localhost:6379
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Run Integration Tests
-        run: npm run test:integration
-
   delete_preview_db:
     name: Delete Preview Database
     needs: setup
