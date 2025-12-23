@@ -15,6 +15,16 @@ function getEnvVariable(key: string): string {
   return value;
 }
 
+// Same as getEnvVariable but returns null instead of throwing if not set
+function getOptionalEnvVariable(key: string): string | null {
+  const secretFilePath = process.env[`${key}_FILE`];
+  if (secretFilePath && fs.existsSync(secretFilePath)) {
+    return fs.readFileSync(secretFilePath, "utf8").trim();
+  }
+
+  return process.env[key]?.trim() || null;
+}
+
 const tokenExpiryRegex = /^\d+[smhd]$/;
 
 function validateTokenExpiry(value: string): TokenExpiry {
@@ -48,8 +58,11 @@ export const config = {
     pass: getEnvVariable("SMTP_PASS"),
   },
   redis: {
-    port: Number(getEnvVariable("REDIS_PORT")),
-    host: getEnvVariable("REDIS_HOST"),
+    // Use REDIS_URL for managed Redis (Upstash), otherwise use HOST/PORT for local Docker
+    // Supports Docker secrets via REDIS_URL_FILE
+    url: getOptionalEnvVariable("REDIS_URL"),
+    port: Number(process.env.REDIS_PORT || 6379),
+    host: process.env.REDIS_HOST || "localhost",
   },
   bcrypt: {
     salt_rounds: Number(getEnvVariable("SALT_ROUNDS")),
