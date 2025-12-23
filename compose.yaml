@@ -8,7 +8,7 @@ services:
   app:
     image: as3305100/budget-tracker:latest
     deploy:
-      replicas: 2
+      replicas: 1
       update_config:
         order: start-first
         failure_action: rollback
