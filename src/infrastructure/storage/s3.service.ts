@@ -10,33 +10,28 @@ const PRESIGNED_URL_EXPIRY = 3600;
 
 interface PresignedUrlResult {
   uploadUrl: string;
-  avatarId: string;
-  avatarUrl: string;
+  filename: string; // This becomes avatarId, client uses CDN_URL + filename for avatarUrl
 }
 
 export type { PresignedUrlResult };
 
 export class S3Service {
   static async generateUploadUrl(mime: string): Promise<PresignedUrlResult> {
-    const avatarId = `avatars/${uuidv4()}.${mime}`;
+    const filename = `avatars/${uuidv4()}.${mime}`;
 
     try {
       const command = new PutObjectCommand({
         Bucket: S3_BUCKET_NAME,
-        Key: avatarId,
+        Key: filename,
         ContentType: `image/${mime}`,
       });
 
       const uploadUrl = await getSignedUrl(s3Client, command, {
         expiresIn: PRESIGNED_URL_EXPIRY,
       });
-
-      // Construct the public URL for the avatar
-      const avatarUrl = `https://${S3_BUCKET_NAME}.s3.amazonaws.com/${avatarId}`;
-
-      return { uploadUrl, avatarId, avatarUrl };
+      return { uploadUrl, filename };
     } catch (error) {
-      logger.error("Failed to generate pre-signed URL", { avatarId, error });
+      logger.error("Failed to generate pre-signed URL", { filename, error });
       throw new ApiError(500, "Failed to generate pre-signed URL");
     }
   }
