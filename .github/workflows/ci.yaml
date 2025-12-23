@@ -4,8 +4,7 @@ on:
   pull_request:
     branches: [main]
 
-# All required environment variables for CI
-# These are dummy values - real secrets should be added to GitHub Secrets for integration tests
+# Environment variables for CI (dummy values for Prisma generate and tests)
 env:
   DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
   NODE_ENV: test
@@ -92,7 +91,6 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     env:
-      # Override with real test database
       DATABASE_URL: postgresql://test_user:test_password@localhost:5432/budget_test
     steps:
       - uses: actions/checkout@v4

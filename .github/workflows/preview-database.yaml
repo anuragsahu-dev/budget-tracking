@@ -1,0 +1,108 @@
+name: Preview Database
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+# Environment variables for tests (dummy values for non-DB related configs)
+env:
+  NODE_ENV: test
+  PORT: 3000
+  CLIENT_URL: http://localhost:3000
+  ACCESS_TOKEN_SECRET: ci-access-token-secret
+  REFRESH_TOKEN_SECRET: ci-refresh-token-secret
+  ACCESS_TOKEN_EXPIRY: 15m
+  REFRESH_TOKEN_EXPIRY: 7d
+  SMTP_HOST: smtp.example.com
+  SMTP_PORT: 587
+  SMTP_USER: test@example.com
+  SMTP_PASS: dummy-password
+  REDIS_PORT: 6379
+  REDIS_HOST: localhost
+  SALT_ROUNDS: 10
+  APP_URL: http://localhost:3000
+  FORGOT_PASSWORD_REDIRECT_URL: http://localhost:3000/reset-password
+  GOOGLE_CLIENT_ID: dummy-google-client-id
+  GOOGLE_CLIENT_SECRET: dummy-google-client-secret
+  GOOGLE_CALLBACK_URL: http://localhost:3000/auth/google/callback
+  RAZORPAY_KEY_ID: dummy-razorpay-key
+  RAZORPAY_KEY_SECRET: dummy-razorpay-secret
+  RAZORPAY_WEBHOOK_SECRET: dummy-webhook-secret
+  AWS_REGION: us-east-1
+  AWS_ACCESS_KEY_ID: dummy-aws-key
+  AWS_SECRET_ACCESS_KEY: dummy-aws-secret
+  AWS_S3_BUCKET_NAME: dummy-bucket
+
+jobs:
+  setup:
+    name: Setup
+    outputs:
+      branch: ${{ steps.branch_name.outputs.current_branch }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get branch name
+        id: branch_name
+        uses: tj-actions/branch-names@v8
+
+  create_preview_db:
+    name: Create Preview Database
+    needs: setup
+    if: |
+      github.event_name == 'pull_request' && (
+      github.event.action == 'synchronize'
+      || github.event.action == 'opened'
+      || github.event.action == 'reopened')
+    runs-on: ubuntu-latest
+    outputs:
+      db_url: ${{ steps.create_branch.outputs.db_url }}
+      db_url_with_pooler: ${{ steps.create_branch.outputs.db_url_with_pooler }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Neon Branch
+        id: create_branch
+        uses: neondatabase/create-branch-action@v5
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: ${{ steps.create_branch.outputs.db_url_with_pooler }}
+
+      - name: Run Migrations on Preview DB
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ steps.create_branch.outputs.db_url_with_pooler }}
+
+  delete_preview_db:
+    name: Delete Preview Database
+    needs: setup
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Neon Branch
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          api_key: ${{ secrets.NEON_API_KEY }}
