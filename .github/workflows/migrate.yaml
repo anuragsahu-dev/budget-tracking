@@ -47,8 +47,8 @@ jobs:
           node-version: 22
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (skip husky)
+        run: npm ci --ignore-scripts
 
       - name: Generate Prisma Client
         run: npx prisma generate
@@ -65,19 +65,18 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
 
-# ============================================================================
-# This workflow manually syncs the Ephemeral Neon Project (Project 2) with
-# the latest migrations from the codebase.
-#
-# REQUIRED SECRET:
-#   EPHEMERAL_DATABASE_URL - This should be the DATABASE URL of the MAIN BRANCH
-#                            of your Ephemeral Neon Project (Project 2).
-#                            NOT the production database!
-#
-# Example: postgresql://user:pass@ep-xyz.neon.tech/neondb?sslmode=require
-#          (Get this from Neon Dashboard → Project 2 → main branch → Connection String)
-# ============================================================================
-
+  # ============================================================================
+  # This workflow manually syncs the Ephemeral Neon Project (Project 2) with
+  # the latest migrations from the codebase.
+  #
+  # REQUIRED SECRET:
+  #   EPHEMERAL_DATABASE_URL - This should be the DATABASE URL of the MAIN BRANCH
+  #                            of your Ephemeral Neon Project (Project 2).
+  #                            NOT the production database!
+  #
+  # Example: postgresql://user:pass@ep-xyz.neon.tech/neondb?sslmode=require
+  #          (Get this from Neon Dashboard → Project 2 → main branch → Connection String)
+  # ============================================================================
 
   sync-ephemeral-project:
     name: Sync Ephemeral Project (Neon Project 2)
@@ -96,8 +95,8 @@ jobs:
           node-version: 22
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (skip husky)
+        run: npm ci --ignore-scripts
 
       - name: Generate Prisma Client
         run: npx prisma generate

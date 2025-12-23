@@ -75,8 +75,8 @@ jobs:
           node-version: 22
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (skip husky)
+        run: npm ci --ignore-scripts
 
       # Uses EPHEMERAL_DATABASE_URL secret
       # This should be: Neon Project 2 → main branch → Connection String
