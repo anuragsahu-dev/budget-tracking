@@ -81,11 +81,11 @@ router.patch(
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: fileType
+ *         name: mimeType
  *         required: true
  *         schema:
  *           type: string
- *           enum: [image/jpeg, image/png, image/webp]
+ *           enum: [image/jpeg, image/jpg, image/png, image/webp]
  *         description: MIME type of the image
  *     responses:
  *       200:
