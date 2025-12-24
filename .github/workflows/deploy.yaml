@@ -5,24 +5,48 @@ on:
 
 env:
   IMAGE_NAME: as3305100/budget-tracker
+  DEPLOY_TIMEOUT: 120
 
 jobs:
   deploy:
     name: Deploy to Server
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - name: SSH and Deploy
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get deployment info
+        id: deploy_info
+        run: |
+          IMAGE_TAG=$(grep -oP 'image: as3305100/budget-tracker:\K[^\s]+' compose.yaml || echo "latest")
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "### Deployment Info" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** \`${{ env.IMAGE_NAME }}:$IMAGE_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Deploy to Server
+        id: deploy
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_SSH_PORT }}
-          envs: IMAGE_NAME
+          command_timeout: 8m
+          envs: IMAGE_NAME,DEPLOY_TIMEOUT
           script: |
             set -e
 
+            echo "=============================================="
+            echo "Starting deployment..."
+            echo "=============================================="
+
             # Clone or update repository
+            echo "Updating repository..."
             if [ ! -d ~/budget-tracker/.git ]; then
               rm -rf ~/budget-tracker
               git clone https://github.com/${{ github.repository }}.git ~/budget-tracker
@@ -31,42 +55,130 @@ jobs:
             cd ~/budget-tracker
             git fetch origin main
             git checkout main
-            git pull origin main
+            git reset --hard origin/main
 
-            # Get image tag from compose.yaml (already updated by build workflow)
+            # Get image tag
             IMAGE_TAG=$(grep -oP 'image: as3305100/budget-tracker:\K[^\s]+' compose.yaml || echo "latest")
-            echo "Deploying image: $IMAGE_NAME:$IMAGE_TAG"
+            echo "Image: $IMAGE_NAME:$IMAGE_TAG"
 
-            # Pull and deploy new image
-            sudo docker pull $IMAGE_NAME:$IMAGE_TAG
-            sudo docker stack deploy -c compose.yaml budget-tracker
+            # Pull new image
+            echo "Pulling Docker image..."
+            if ! sudo docker pull $IMAGE_NAME:$IMAGE_TAG; then
+              echo "ERROR: Failed to pull image $IMAGE_NAME:$IMAGE_TAG"
+              exit 1
+            fi
+            echo "Image pulled successfully"
 
-            # Health check
-            echo "Checking service health..."
+            # Get current service state for rollback
+            CURRENT_IMAGE=$(sudo docker service inspect budget-tracker_app --format='{{.Spec.TaskTemplate.ContainerSpec.Image}}' 2>/dev/null || echo "none")
+            echo "Current image: $CURRENT_IMAGE"
+
+            # Deploy
+            echo "Deploying stack..."
+            if ! sudo docker stack deploy -c compose.yaml budget-tracker 2>&1; then
+              echo "ERROR: Stack deploy failed"
+              exit 1
+            fi
+            echo "Stack deployed"
+
+            # Health check with detailed status
+            echo "=============================================="
+            echo "Health Check (timeout: ${DEPLOY_TIMEOUT}s)"
+            echo "=============================================="
+
             SERVICE_NAME="budget-tracker_app"
+            START_TIME=$(date +%s)
 
-            for i in {1..60}; do
-              REPLICAS=$(sudo docker service ls --format '{{.Name}} {{.Replicas}}' | grep $SERVICE_NAME || echo "0/0")
+            while true; do
+              CURRENT_TIME=$(date +%s)
+              ELAPSED=$((CURRENT_TIME - START_TIME))
+              
+              if [ $ELAPSED -ge $DEPLOY_TIMEOUT ]; then
+                echo ""
+                echo "TIMEOUT: Deployment did not become healthy within ${DEPLOY_TIMEOUT}s"
+                echo ""
+                echo "=============================================="
+                echo "SERVICE STATUS"
+                echo "=============================================="
+                sudo docker service ls
+                echo ""
+                echo "=============================================="
+                echo "TASK STATUS"
+                echo "=============================================="
+                sudo docker service ps $SERVICE_NAME --no-trunc 2>/dev/null || echo "Service not found"
+                echo ""
+                echo "=============================================="
+                echo "CONTAINER LOGS (last 50 lines)"
+                echo "=============================================="
+                sudo docker service logs $SERVICE_NAME --tail 50 2>&1 || echo "No logs available"
+                exit 1
+              fi
+              
+              # Check service status
+              REPLICAS=$(sudo docker service ls --format '{{.Name}} {{.Replicas}}' 2>/dev/null | grep $SERVICE_NAME || echo "$SERVICE_NAME 0/0")
               CURRENT=$(echo $REPLICAS | awk '{print $2}' | cut -d'/' -f1)
               DESIRED=$(echo $REPLICAS | awk '{print $2}' | cut -d'/' -f2)
               
               if [[ "$CURRENT" == "$DESIRED" && "$CURRENT" != "0" ]]; then
-                echo "$SERVICE_NAME is healthy: $CURRENT/$DESIRED replicas"
+                echo ""
+                echo "=============================================="
+                echo "DEPLOYMENT SUCCESSFUL"
+                echo "=============================================="
+                echo "Service: $SERVICE_NAME"
+                echo "Replicas: $CURRENT/$DESIRED"
+                echo "Image: $IMAGE_NAME:$IMAGE_TAG"
+                echo "Time: ${ELAPSED}s"
                 break
               fi
-              echo "Waiting... $CURRENT/$DESIRED replicas"
+              
+              # Show progress with task status
+              TASK_STATE=$(sudo docker service ps $SERVICE_NAME --format '{{.CurrentState}}' 2>/dev/null | head -1 || echo "Unknown")
+              echo "[${ELAPSED}s] Waiting... $CURRENT/$DESIRED replicas | Task: $TASK_STATE"
+              
               sleep 5
             done
 
-            if [[ "$CURRENT" != "$DESIRED" || "$CURRENT" == "0" ]]; then
-              echo "Deployment failed!"
-              sudo docker service logs $SERVICE_NAME --tail 20
-              exit 1
+            # Final verification
+            echo ""
+            echo "Verifying deployment..."
+
+            # Test health endpoint
+            CONTAINER_ID=$(sudo docker ps -q --filter "name=budget-tracker_app" | head -1)
+            if [ -n "$CONTAINER_ID" ]; then
+              if sudo docker exec $CONTAINER_ID wget -qO- http://127.0.0.1:3000/health/live 2>/dev/null; then
+                echo "Health endpoint responding"
+              else
+                echo "Warning: Health endpoint not responding (may still be starting)"
+              fi
             fi
 
-            echo "Deployment successful!"
+            # Cleanup
+            echo ""
+            echo "Cleaning up old images..."
+            sudo docker system prune -af --filter "until=24h" 2>/dev/null || true
 
-            # Cleanup old images
-            sudo docker system prune -af || true
+            echo ""
+            echo "=============================================="
+            echo "Deployment completed successfully!"
+            echo "=============================================="
         env:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          DEPLOY_TIMEOUT: ${{ env.DEPLOY_TIMEOUT }}
+
+      - name: Update deployment summary
+        if: always()
+        run: |
+          if [ "${{ steps.deploy.outcome }}" == "success" ]; then
+            echo "### Deployment Successful" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The application has been deployed and is healthy." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### Deployment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. SSH to the server and check \`sudo docker service logs budget-tracker_app\`" >> $GITHUB_STEP_SUMMARY
+            echo "2. Check if secrets are configured: \`sudo docker secret ls\`" >> $GITHUB_STEP_SUMMARY
+            echo "3. Verify compose.yaml has the correct image tag" >> $GITHUB_STEP_SUMMARY
+          fi
