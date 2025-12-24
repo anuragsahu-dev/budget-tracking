@@ -54,25 +54,36 @@ function createRedisClient(): Redis {
 }
 
 /**
- * BullMQ connection options
- * - Upstash: Uses REDIS_URL (rediss:// auto-enables TLS)
- * - Local: Uses HOST/PORT
+ * Create BullMQ connection
+ * BullMQ expects either { host, port } or { connection: Redis }
  */
-export const bullmqConnection = isTest
-  ? { host: "localhost", port: 6379, maxRetriesPerRequest: null }
-  : config.redis.url
-  ? {
-      // Upstash connection for BullMQ
+function createBullMQConnection() {
+  if (isTest) {
+    return { host: "localhost", port: 6379, maxRetriesPerRequest: null };
+  }
+
+  // If REDIS_URL is provided (Upstash/managed Redis), use it
+  if (config.redis.url) {
+    logger.info("BullMQ using managed Redis (REDIS_URL)");
+    return {
       connection: new Redis(config.redis.url, {
         maxRetriesPerRequest: null,
       }),
-    }
-  : {
-      // Local Docker Redis for BullMQ
-      host: config.redis.host,
-      port: config.redis.port,
-      maxRetriesPerRequest: null,
     };
+  }
+
+  // Local Docker Redis
+  logger.info(
+    `BullMQ using local Redis (${config.redis.host}:${config.redis.port})`
+  );
+  return {
+    host: config.redis.host,
+    port: config.redis.port,
+    maxRetriesPerRequest: null,
+  };
+}
+
+export const bullmqConnection = createBullMQConnection();
 
 const redis = createRedisClient();
 
