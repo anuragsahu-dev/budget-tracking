@@ -34,6 +34,9 @@ WORKDIR /app
 # Install wget for healthcheck
 RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user for security
+RUN useradd -m appuser
+
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
@@ -43,8 +46,10 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/src/generated ./src/generated
 
-# Create non-root user for security
-RUN useradd -m appuser
+# Create logs directory and set ownership BEFORE switching to non-root user
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app
+
+# Switch to non-root user
 USER appuser
 
 # Expose port
