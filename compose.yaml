@@ -1,6 +1,6 @@
 services:
   app:
-    image: as3305100/budget-tracker:build-4f2dad6ed3e86106cdf18ca05ace3559633b17d1
+    image: as3305100/budget-tracker:build-0ef85582a42cc3868237634f481f98b61f3e8a70
     deploy:
       replicas: 1
       update_config:
