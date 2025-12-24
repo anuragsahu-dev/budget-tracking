@@ -14,7 +14,7 @@ COPY prisma ./prisma/
 # Install all dependencies (including devDependencies for build)
 RUN npm ci --ignore-scripts
 
-# Generate Prisma client
+# Generate Prisma client (outputs to src/generated/prisma)
 RUN npx prisma generate
 
 # Copy source code
@@ -42,9 +42,12 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 
-# Copy Prisma files (schema + generated client)
+# Copy Prisma schema (needed for migrations)
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/src/generated ./src/generated
+
+# Copy Prisma generated client to BOTH locations to ensure it works
+# TypeScript compiles src/generated → dist/generated, so we need it there
+COPY --from=builder /app/src/generated ./dist/generated
 
 # Create logs directory and set ownership BEFORE switching to non-root user
 RUN mkdir -p /app/logs && chown -R appuser:appuser /app
