@@ -65,8 +65,8 @@ export class UserService {
   /**
    * Generate a pre-signed URL for avatar upload
    */
-  static async getAvatarUploadUrl(mime: string) {
-    return S3Service.generateUploadUrl(mime);
+  static async getAvatarUploadUrl(mimeType: string) {
+    return S3Service.generateUploadUrl(mimeType);
   }
 
   /**

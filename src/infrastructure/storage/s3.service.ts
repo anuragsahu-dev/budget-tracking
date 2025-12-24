@@ -16,14 +16,14 @@ interface PresignedUrlResult {
 export type { PresignedUrlResult };
 
 export class S3Service {
-  static async generateUploadUrl(mime: string): Promise<PresignedUrlResult> {
-    const filename = `avatars/${uuidv4()}.${mime}`;
+  static async generateUploadUrl(mimeType: string): Promise<PresignedUrlResult> {
+    const filename = `avatars/${uuidv4()}.${mimeType}`;
 
     try {
       const command = new PutObjectCommand({
         Bucket: S3_BUCKET_NAME,
         Key: filename,
-        ContentType: `image/${mime}`,
+        ContentType: mimeType,
       });
 
       const uploadUrl = await getSignedUrl(s3Client, command, {

@@ -36,9 +36,9 @@ export const UserController = {
    * Get pre-signed URL for avatar upload
    */
   getAvatarUploadUrl: asyncHandler(async (req: Request, res: Response) => {
-    const { mime } = getValidatedQuery<GetAvatarUploadUrlInput>(req);
+    const { mimeType } = getValidatedQuery<GetAvatarUploadUrlInput>(req);
 
-    const result = await UserService.getAvatarUploadUrl(mime);
+    const result = await UserService.getAvatarUploadUrl(mimeType);
 
     return sendApiResponse(
       res,
