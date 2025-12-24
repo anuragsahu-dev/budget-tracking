@@ -54,10 +54,13 @@ function createRedisClient(): Redis {
 }
 
 /**
- * Create BullMQ connection
- * BullMQ expects either { host, port } or { connection: Redis }
+ * Create BullMQ Redis connection
+ * Returns a Redis instance directly (NOT wrapped in { connection: ... })
+ * Workers should use: new Worker(queue, processor, { connection: bullmqConnection })
  */
-function createBullMQConnection() {
+function createBullMQConnection():
+  | Redis
+  | { host: string; port: number; maxRetriesPerRequest: null } {
   if (isTest) {
     return { host: "localhost", port: 6379, maxRetriesPerRequest: null };
   }
@@ -65,11 +68,9 @@ function createBullMQConnection() {
   // If REDIS_URL is provided (Upstash/managed Redis), use it
   if (config.redis.url) {
     logger.info("BullMQ using managed Redis (REDIS_URL)");
-    return {
-      connection: new Redis(config.redis.url, {
-        maxRetriesPerRequest: null,
-      }),
-    };
+    return new Redis(config.redis.url, {
+      maxRetriesPerRequest: null,
+    });
   }
 
   // Local Docker Redis
