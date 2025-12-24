@@ -1,6 +1,6 @@
 # Payment & Webhook System Documentation
 
-This document explains the complete payment flow, webhook handling, and development setup for the Budget Tracking application's subscription payment system using Razorpay.
+This document explains the complete payment flow and webhook handling for the Budget Tracking application's subscription payment system using Razorpay.
 
 ---
 
@@ -9,12 +9,10 @@ This document explains the complete payment flow, webhook handling, and developm
 1. [Architecture Overview](#architecture-overview)
 2. [Payment Flow](#payment-flow)
 3. [Webhook System](#webhook-system)
-4. [Database Schema](#database-schema)
-5. [API Endpoints](#api-endpoints)
-6. [Error Handling & Recovery](#error-handling--recovery)
-7. [Development Setup](#development-setup)
-8. [Testing Webhooks Locally](#testing-webhooks-locally)
-9. [Production Considerations](#production-considerations)
+4. [API Endpoints](#api-endpoints)
+5. [Error Handling & Recovery](#error-handling--recovery)
+6. [Testing Webhooks Locally](#testing-webhooks-locally)
+7. [Production Considerations](#production-considerations)
 
 ---
 
@@ -234,7 +232,7 @@ A webhook is an HTTP callback that Razorpay sends to your server when payment ev
 | `payment.failed`   | Payment failed     | Mark payment as FAILED                      |
 | `refund.created`   | Refund by admin    | **Log only** - admin handles manually       |
 
-> **Note on Refunds:** Refund webhooks are triggered when YOU (admin) issue a refund from Razorpay Dashboard. We just log it. Subscription cancellation is done manually. This is optional and you can implement automated refund handling later if needed.
+> **Note on Refunds:** Refund webhooks are triggered when YOU (admin) issue a refund from Razorpay Dashboard. We just log it. Subscription cancellation is done manually.
 
 ### Webhook Flow
 
@@ -291,60 +289,6 @@ const isValid = crypto.timingSafeEqual(
   Buffer.from(expectedSignature),
   Buffer.from(signature)
 );
-```
-
----
-
-## Database Schema
-
-### Payment Table
-
-```prisma
-model Payment {
-  id             String  @id @default(ulid())
-  subscriptionId String?
-  userId         String
-
-  plan     SubscriptionPlan
-  provider PaymentProvider
-
-  amount   Decimal @db.Decimal(12, 2)
-  currency String  @db.VarChar(3)
-
-  providerPaymentId String? @unique  // Set after payment verified
-  providerOrderId   String  @unique  // Always known when order created
-
-  status        PaymentStatus
-  failureReason String?
-
-  paidAt    DateTime?
-  createdAt DateTime  @default(now())
-}
-```
-
-### Payment Status Flow
-
-```
-PENDING ─────▶ COMPLETED ─────▶ REFUNDED
-    │
-    └────────▶ FAILED
-```
-
-### PlanPricing Table
-
-```prisma
-model PlanPricing {
-  id           String           @id @default(ulid())
-  plan         SubscriptionPlan
-  currency     String           @db.VarChar(3)
-  amount       Int              // In paise/cents
-  durationDays Int              // 30 or 365
-  isActive     Boolean          @default(true)
-  name         String           // "PRO Monthly"
-  description  String?
-
-  @@unique([plan, currency])
-}
 ```
 
 ---
@@ -416,53 +360,6 @@ logger.error("CRITICAL: Subscription activation failed after payment", {
 
 ---
 
-## Development Setup
-
-### 1. Environment Variables
-
-```env
-# Razorpay Configuration
-RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
-RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxx
-RAZORPAY_WEBHOOK_SECRET=xxxxxxxxxxxxxxxxxxxx
-```
-
-### 2. Get Razorpay Test Credentials
-
-1. Create account at [Razorpay Dashboard](https://dashboard.razorpay.com)
-2. Go to Settings → API Keys
-3. Generate test mode keys
-4. Copy Key ID and Key Secret
-
-### 3. Seed Pricing Data
-
-Run migration and seed:
-
-```bash
-npx prisma migrate dev
-npx prisma db seed
-```
-
-Or manually create pricing via Admin API:
-
-```http
-POST /api/v1/admin/pricing
-Authorization: Bearer <admin_token>
-Content-Type: application/json
-
-{
-  "plan": "PRO_MONTHLY",
-  "currency": "INR",
-  "amount": 49900,
-  "durationDays": 30,
-  "name": "PRO Monthly",
-  "description": "Full access for 30 days",
-  "isActive": true
-}
-```
-
----
-
 ## Testing Webhooks Locally
 
 ### Option 1: Using ngrok (Recommended)
@@ -509,7 +406,6 @@ Content-Type: application/json
 ### Option 3: Manual Testing with curl
 
 ```bash
-# Create test webhook payload
 curl -X POST http://localhost:3000/api/v1/payments/webhook \
   -H "Content-Type: application/json" \
   -H "x-razorpay-signature: <generate_signature>" \
@@ -575,14 +471,9 @@ If webhooks fail repeatedly:
 - Check Razorpay Dashboard for delivery status
 - Manual intervention may be needed
 
-### 6. Subscription Expiry Cron Job
+### 6. Subscription Expiry
 
-Set up a cron job to mark expired subscriptions:
-
-```typescript
-// Run daily
-await SubscriptionRepository.markExpiredSubscriptions();
-```
+The background scheduler job automatically marks expired subscriptions daily.
 
 ---
 

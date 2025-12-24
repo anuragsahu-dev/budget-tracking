@@ -1,32 +1,75 @@
-# Node / build artifacts
+# ===========================================
+# Dependencies (not needed in image)
+# ===========================================
 node_modules
-dist
-coverage
 
+# ===========================================
+# Build outputs (we build fresh in Docker)
+# ===========================================
+dist
+
+# ===========================================
+# Environment files (secrets via Docker secrets)
+# ===========================================
+.env
+.env.*
+!.env.example
+
+# ===========================================
 # Logs
+# ===========================================
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 
-
-# Git & editor
+# ===========================================
+# Git & Version Control
+# ===========================================
 .git
 .gitignore
+.gitattributes
+
+# ===========================================
+# Editor
+# ===========================================
 .vscode
 
-# Docker files themselves (not needed in image)
+# ===========================================
+# Docker files (not needed inside the image)
+# ===========================================
 Dockerfile*
 compose*.yaml
+Caddyfile
+.dockerignore
 
-# Tests & docs (not needed at runtime)
+# ===========================================
+# Tests & Documentation (not needed at runtime)
+# ===========================================
 test
 docs
+*.md
+!README.md
 
-# OS junk
+# ===========================================
+# OS files
+# ===========================================
 .DS_Store
 Thumbs.db
 
-# npm config (VERY IMPORTANT for your error)
+# ===========================================
+# Development tools (not needed in production)
+# ===========================================
+.husky
+commitlint.config.js
+eslint.config.mjs
+nodemon.json
+tsconfig.test.json
+vitest.config.ts
 .npmrc
+
+# ===========================================
+# Prisma config (schema is needed, config is not)
+# ===========================================
+prisma.config.ts
