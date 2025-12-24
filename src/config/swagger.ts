@@ -1,4 +1,11 @@
 import swaggerJsdoc from "swagger-jsdoc";
+import path from "path";
+
+// In production, files are in dist/, in development they're in src/
+const isProduction = process.env.NODE_ENV === "production";
+const basePath = isProduction
+  ? path.join(__dirname, "../modules/**/*.route.js")
+  : path.join(__dirname, "../modules/**/*.route.ts");
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -91,7 +98,7 @@ Health check endpoints are mounted at \`/health\` (not under \`/api/v1\`):
       { name: "Admin", description: "Admin operations" },
     ],
   },
-  apis: ["./src/modules/**/*.route.ts"],
+  apis: [basePath],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
