@@ -1,12 +1,6 @@
-# =============================================================================
-# PRODUCTION COMPOSE - Budget Tracker
-# Deploy with: docker stack deploy -c compose.yaml budget-tracker
-# =============================================================================
-
 services:
-  # Main Application
   app:
-    image: as3305100/budget-tracker:latest
+    image: as3305100/budget-tracker:build-8dafe65d0a522c63e64e7b360ecd45a834366361
     deploy:
       replicas: 1
       update_config:
@@ -20,28 +14,24 @@ services:
       test:
         - CMD
         - wget
-        - "--no-verbose"
-        - "--tries=1"
-        - "--spider"
+        - '--no-verbose'
+        - '--tries=1'
+        - '--spider'
         - http://127.0.0.1:3000/health/live
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 1m
     environment:
-      # Server
       - PORT=3000
       - NODE_ENV=production
       - CLIENT_URL=https://your-frontend-domain.com
       - APP_URL=https://your-api-domain.com
-      # Auth
       - ACCESS_TOKEN_EXPIRY=15m
       - REFRESH_TOKEN_EXPIRY=7d
-      - SALT_ROUNDS=10
-      # SMTP
+      - SALT_ROUNDS=12
       - SMTP_HOST=smtp.gmail.com
       - SMTP_PORT=587
-      # Secrets (loaded from Docker secrets)
       - DATABASE_URL_FILE=/run/secrets/database_url
       - ACCESS_TOKEN_SECRET_FILE=/run/secrets/access_token_secret
       - REFRESH_TOKEN_SECRET_FILE=/run/secrets/refresh_token_secret
@@ -68,7 +58,7 @@ services:
       - smtp_pass
       - google_client_id
       - google_client_secret
-      - google_callback_url
+      - google_callback_url_v2
       - razorpay_key_id
       - razorpay_key_secret
       - razorpay_webhook_secret
@@ -77,8 +67,6 @@ services:
       - aws_secret_access_key
       - aws_s3_bucket_name
       - redis_url
-
-  # Reverse Proxy
   caddy:
     image: caddy:2-alpine
     deploy:
@@ -88,8 +76,8 @@ services:
         failure_action: rollback
         delay: 10s
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - caddy_data:/data
       - caddy_config:/config
@@ -98,14 +86,11 @@ services:
     configs:
       - source: Caddyfile
         target: /etc/caddy/Caddyfile
-
 networks:
-  budget_net:
-
+  budget_net: null
 volumes:
-  caddy_data:
-  caddy_config:
-
+  caddy_data: null
+  caddy_config: null
 secrets:
   database_url:
     external: true
@@ -139,7 +124,6 @@ secrets:
     external: true
   redis_url:
     external: true
-
 configs:
   Caddyfile:
     file: ./Caddyfile
