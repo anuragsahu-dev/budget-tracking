@@ -1,4 +1,4 @@
-# Budget Tracking API
+# FinFlow – Financial Management Backend API
 
 A production-ready RESTful API for personal budget and expense tracking built with Node.js, Express, TypeScript, and PostgreSQL.
 
@@ -70,8 +70,8 @@ A production-ready RESTful API for personal budget and expense tracking built wi
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/anuragsahu-dev/budget-tracking.git
-   cd budget-tracking
+   git clone https://github.com/anuragsahu-dev/finflow-api.git
+   cd finflow-api
    ```
 
 2. **Install dependencies**

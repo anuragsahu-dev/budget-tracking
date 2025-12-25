@@ -1,6 +1,6 @@
 # System Architecture
 
-This document provides an overview of the Budget Tracking API's architecture, design decisions, and system components.
+This document provides an overview of the FinFlow API's architecture, design decisions, and system components.
 
 ---
 
@@ -255,7 +255,7 @@ See [PAYMENT_SYSTEM.md](PAYMENT_SYSTEM.md) for detailed documentation.
 ### Docker Image
 
 - Registry: Docker Hub
-- Image: `as3305100/budget-tracker`
+- Image: `as3305100/finflow-api`
 - Tags: `build-<commit-sha>`, `latest`
 
 ---

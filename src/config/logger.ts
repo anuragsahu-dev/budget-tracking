@@ -71,21 +71,6 @@ if (config.server.nodeEnv === "production") {
   );
 }
 
-// ============================================================
-// FUTURE: Cloud Logging (Betterstack/Logtail)
-// When you're ready to upgrade, install: npm install @logtail/winston
-// Then uncomment and add LOGTAIL_TOKEN to .env
-// ============================================================
-// import { Logtail } from "@logtail/node";
-// import { LogtailTransport } from "@logtail/winston";
-//
-// const logtailToken = process.env.LOGTAIL_TOKEN;
-// if (logtailToken) {
-//   const logtail = new Logtail(logtailToken);
-//   transportsList.push(new LogtailTransport(logtail));
-//   console.log("☁️  Cloud logging enabled (Logtail)");
-// }
-
 const logger = createLogger({
   level: logLevel,
   format: fileFormat,
@@ -96,29 +81,3 @@ const logger = createLogger({
 });
 
 export default logger;
-
-/*
-Why errors go to both app-YYYY-MM-DD.log and error-YYYY-MM-DD.log
-
-Single place for all logs (app.log)
-
-If you want to see the full story of your app (info → warn → error), you open app-YYYY-MM-DD.log.
-
-This file gives context like:
-
-User logged in (info)
-
-DB query took long (warn)
-
-Query failed (error)
-
-Without errors in app.log, you'd lose continuity.
-
-Dedicated file for errors (error.log)
-
-Sometimes you only care about failures (e.g., DevOps scanning logs for crashes).
-
-Having a dedicated error file makes it faster to grep/search and integrate into alerting systems.
-
-Example: Your monitoring agent only tails error.log to trigger alerts, not the entire app log.
-*/

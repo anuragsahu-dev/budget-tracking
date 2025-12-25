@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: as3305100/budget-tracker
+  IMAGE_NAME: as3305100/finflow-api
   DEPLOY_TIMEOUT: 120
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
       - name: Get deployment info
         id: deploy_info
         run: |
-          IMAGE_TAG=$(grep -oP 'image: as3305100/budget-tracker:\K[^\s]+' compose.yaml || echo "latest")
+          IMAGE_TAG=$(grep -oP 'image: as3305100/finflow-api:\K[^\s]+' compose.yaml || echo "latest")
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "### Deployment Info" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -47,18 +47,18 @@ jobs:
 
             # Clone or update repository
             echo "Updating repository..."
-            if [ ! -d ~/budget-tracker/.git ]; then
-              rm -rf ~/budget-tracker
-              git clone https://github.com/${{ github.repository }}.git ~/budget-tracker
+            if [ ! -d ~/finflow-api/.git ]; then
+              rm -rf ~/finflow-api
+              git clone https://github.com/${{ github.repository }}.git ~/finflow-api
             fi
 
-            cd ~/budget-tracker
+            cd ~/finflow-api
             git fetch origin main
             git checkout main
             git reset --hard origin/main
 
             # Get image tag
-            IMAGE_TAG=$(grep -oP 'image: as3305100/budget-tracker:\K[^\s]+' compose.yaml || echo "latest")
+            IMAGE_TAG=$(grep -oP 'image: as3305100/finflow-api:\K[^\s]+' compose.yaml || echo "latest")
             echo "Image: $IMAGE_NAME:$IMAGE_TAG"
 
             # Pull new image
@@ -70,12 +70,12 @@ jobs:
             echo "Image pulled successfully"
 
             # Get current service state for rollback
-            CURRENT_IMAGE=$(sudo docker service inspect budget-tracker_app --format='{{.Spec.TaskTemplate.ContainerSpec.Image}}' 2>/dev/null || echo "none")
+            CURRENT_IMAGE=$(sudo docker service inspect finflow-api_app --format='{{.Spec.TaskTemplate.ContainerSpec.Image}}' 2>/dev/null || echo "none")
             echo "Current image: $CURRENT_IMAGE"
 
             # Deploy
             echo "Deploying stack..."
-            if ! sudo docker stack deploy -c compose.yaml budget-tracker 2>&1; then
+            if ! sudo docker stack deploy -c compose.yaml finflow-api 2>&1; then
               echo "ERROR: Stack deploy failed"
               exit 1
             fi
@@ -86,7 +86,7 @@ jobs:
             echo "Health Check (timeout: ${DEPLOY_TIMEOUT}s)"
             echo "=============================================="
 
-            SERVICE_NAME="budget-tracker_app"
+            SERVICE_NAME="finflow-api_app"
             START_TIME=$(date +%s)
 
             while true; do
@@ -143,7 +143,7 @@ jobs:
             echo "Verifying deployment..."
 
             # Test health endpoint
-            CONTAINER_ID=$(sudo docker ps -q --filter "name=budget-tracker_app" | head -1)
+            CONTAINER_ID=$(sudo docker ps -q --filter "name=finflow-api_app" | head -1)
             if [ -n "$CONTAINER_ID" ]; then
               if sudo docker exec $CONTAINER_ID wget -qO- http://127.0.0.1:3000/health/live 2>/dev/null; then
                 echo "Health endpoint responding"
@@ -178,7 +178,7 @@ jobs:
             echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
-            echo "1. SSH to the server and check \`sudo docker service logs budget-tracker_app\`" >> $GITHUB_STEP_SUMMARY
+            echo "1. SSH to the server and check \`sudo docker service logs finflow-api_app\`" >> $GITHUB_STEP_SUMMARY
             echo "2. Check if secrets are configured: \`sudo docker secret ls\`" >> $GITHUB_STEP_SUMMARY
             echo "3. Verify compose.yaml has the correct image tag" >> $GITHUB_STEP_SUMMARY
           fi

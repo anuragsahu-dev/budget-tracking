@@ -73,11 +73,11 @@ jobs:
         env:
           POSTGRES_USER: test_user
           POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: budget_test
+          POSTGRES_DB: finflow_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U test_user -d budget_test"
+          --health-cmd="pg_isready -U test_user -d finflow_test"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -91,7 +91,7 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     env:
-      DATABASE_URL: postgresql://test_user:test_password@localhost:5432/budget_test
+      DATABASE_URL: postgresql://test_user:test_password@localhost:5432/finflow_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

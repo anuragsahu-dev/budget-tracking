@@ -1,4 +1,4 @@
-name: "budget-app"
+name: "finflow-app"
 services:
   postgres:
     image: postgres:17
@@ -6,20 +6,20 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: budgetdb
+      POSTGRES_DB: finflowdb
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
-      - budget-net
+      - finflow-net
   redis:
     image: redis:8
     ports:
       - 6379:6379
     restart: unless-stopped
     networks:
-      - budget-net
+      - finflow-net
 
   server:
     build:
@@ -39,10 +39,10 @@ services:
       - ./:/app
       - /app/node_modules
     networks:
-      - budget-net
+      - finflow-net
 
 volumes:
   pgdata: null
 
 networks:
-  budget-net: null
+  finflow-net: null

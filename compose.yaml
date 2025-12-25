@@ -1,6 +1,6 @@
 services:
   app:
-    image: as3305100/budget-tracker:build-3d5536159c934140857d90adc03e7846e1d679ee
+    image: as3305100/finflow-api:build-3d5536159c934140857d90adc03e7846e1d679ee
     deploy:
       replicas: 1
       update_config:
@@ -14,9 +14,9 @@ services:
       test:
         - CMD
         - wget
-        - '--no-verbose'
-        - '--tries=1'
-        - '--spider'
+        - "--no-verbose"
+        - "--tries=1"
+        - "--spider"
         - http://127.0.0.1:3000/health/live
       interval: 30s
       timeout: 10s
@@ -29,7 +29,7 @@ services:
       - APP_URL=https://your-api-domain.com
       - ACCESS_TOKEN_EXPIRY=15m
       - REFRESH_TOKEN_EXPIRY=7d
-      - SALT_ROUNDS=12
+      - SALT_ROUNDS=10
       - SMTP_HOST=smtp.gmail.com
       - SMTP_PORT=587
       - DATABASE_URL_FILE=/run/secrets/database_url
@@ -49,7 +49,7 @@ services:
       - AWS_S3_BUCKET_NAME_FILE=/run/secrets/aws_s3_bucket_name
       - REDIS_URL_FILE=/run/secrets/redis_url
     networks:
-      - budget_net
+      - finflow_net
     secrets:
       - database_url
       - access_token_secret
@@ -76,18 +76,18 @@ services:
         failure_action: rollback
         delay: 10s
     ports:
-      - '80:80'
-      - '443:443'
+      - "80:80"
+      - "443:443"
     volumes:
       - caddy_data:/data
       - caddy_config:/config
     networks:
-      - budget_net
+      - finflow_net
     configs:
       - source: Caddyfile
         target: /etc/caddy/Caddyfile
 networks:
-  budget_net: null
+  finflow_net: null
 volumes:
   caddy_data: null
   caddy_config: null

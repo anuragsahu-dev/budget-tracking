@@ -1,5 +1,5 @@
 {
-  "name": "02-budget-tracking",
+  "name": "finflow-api",
   "version": "1.0.0",
   "main": "dist/index.js",
   "type": "commonjs",
@@ -18,11 +18,14 @@
     "prepare": "husky"
   },
   "keywords": [
-    "budget"
+    "finflow",
+    "finance",
+    "budget",
+    "expense-tracking"
   ],
   "author": "",
   "license": "ISC",
-  "description": "This is budget tracking project.",
+  "description": "FinFlow – A production-ready Financial Management Backend API",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.955.0",
     "@aws-sdk/s3-request-presigner": "^3.955.0",
