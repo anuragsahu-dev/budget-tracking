@@ -68,8 +68,7 @@ export const config = {
     salt_rounds: Number(getEnvVariable("SALT_ROUNDS")),
   },
   url: {
-    email_verification: getEnvVariable("APP_URL"),
-    forget_password: getEnvVariable("FORGOT_PASSWORD_REDIRECT_URL"),
+    app: getEnvVariable("APP_URL"),
   },
   google: {
     clientId: getEnvVariable("GOOGLE_CLIENT_ID"),
