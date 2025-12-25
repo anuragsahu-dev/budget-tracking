@@ -25,45 +25,32 @@ import { globalLimiter } from "./middlewares/rateLimit.middleware";
 
 const app = express();
 
-// ============================================================
-// SWAGGER DOCUMENTATION
-// ============================================================
+// Swagger Documentation
 app.use(
   "/api-docs",
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec, {
     explorer: true,
     customCss: ".swagger-ui .topbar { display: none }",
-    customSiteTitle: "Budget Tracking API Docs",
+    customSiteTitle: "FinFlow API Docs",
   })
 );
 
-// ============================================================
-// SECURITY MIDDLEWARE
-// ============================================================
+// Security Middleware
 app.use(helmet());
 app.use(hpp());
 
-// ============================================================
-// HEALTH CHECK ROUTES (before rate limiter - always accessible)
-// ============================================================
+// Health Check Routes (before rate limiter - always accessible)
 app.use("/health", healthRouter);
 
-// ============================================================
-// RATE LIMITER
-// ============================================================
+// Rate Limiter
 app.use("/api", globalLimiter);
 
-// ============================================================
-// WEBHOOK RAW BODY PARSING
-// Must be BEFORE express.json() to preserve raw body for signature verification
-// ============================================================
+// Webhook Raw Body Parsing (must be BEFORE express.json())
 app.use(
   "/api/v1/payments/webhook",
   express.raw({ type: "application/json" }),
   (req, _res, next) => {
-    // Convert Buffer to string and store as rawBody
-    // Also parse as JSON for req.body access
     if (Buffer.isBuffer(req.body)) {
       req.rawBody = req.body.toString("utf8");
       try {
@@ -76,16 +63,12 @@ app.use(
   }
 );
 
-// ============================================================
-// BODY PARSERS
-// ============================================================
+// Body Parsers
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(cookieParser());
 
-// ============================================================
-// CORS CONFIGURATION
-// ============================================================
+// CORS Configuration
 app.use(
   cors({
     origin: process.env.CLIENT_URL,
@@ -103,14 +86,10 @@ app.use(
   })
 );
 
-// ============================================================
-// PASSPORT INITIALIZATION
-// ============================================================
+// Passport Initialization
 app.use(passport.initialize());
 
-// ============================================================
-// API ROUTES
-// ============================================================
+// API Routes
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/categories", categoryRouter);
@@ -121,16 +100,12 @@ app.use("/api/v1/analytics", analyticsRouter);
 app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
 
-// ============================================================
-// 404 HANDLER
-// ============================================================
+// 404 Handler
 app.use((_req, _res, next) => {
   next(new ApiError(404, "Route not found"));
 });
 
-// ============================================================
-// GLOBAL ERROR HANDLER
-// ============================================================
+// Global Error Handler
 app.use(globalErrorHandler);
 
 export default app;

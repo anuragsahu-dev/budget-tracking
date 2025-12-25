@@ -42,7 +42,6 @@ export class ApiError extends Error {
   }
 }
 
-// sending consistent response
 interface ErrorResponse {
   success: boolean;
   status: "fail" | "error";

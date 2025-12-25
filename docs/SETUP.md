@@ -1,6 +1,6 @@
 # Development Setup Guide
 
-This guide will help you set up the Budget Tracking API for local development. Choose either the **Local Setup** (without Docker for the app) or **Docker Setup** (recommended for consistency).
+This guide will help you set up the FinFlow API for local development. Choose either the **Local Setup** (without Docker for the app) or **Docker Setup** (recommended for consistency).
 
 ---
 
@@ -34,8 +34,8 @@ Before starting, ensure you have the following installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/anuragsahu-dev/budget-tracking.git
-cd budget-tracking
+git clone https://github.com/anuragsahu-dev/finflow-api.git
+cd finflow-api
 ```
 
 ### 2. Create Environment File
@@ -58,7 +58,7 @@ CLIENT_URL=http://localhost:5173
 APP_URL=http://localhost:3000
 
 # Database (Local Docker)
-DATABASE_URL=postgresql://postgres:password@localhost:5432/budgetdb
+DATABASE_URL=postgresql://postgres:password@localhost:5432/finflowdb
 
 # Redis (Local Docker)
 REDIS_HOST=localhost
@@ -296,7 +296,7 @@ AWS S3 is required for avatar uploads using pre-signed URLs.
 
 1. Go to [AWS S3 Console](https://s3.console.aws.amazon.com/)
 2. Click **Create bucket**
-3. Choose a unique bucket name (e.g., `budget-tracker-avatars`)
+3. Choose a unique bucket name (e.g., `finflow-avatars`)
 4. Select your preferred region
 5. Uncheck **Block all public access** (for avatar URLs to be accessible)
 6. Create the bucket

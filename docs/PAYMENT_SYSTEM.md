@@ -1,6 +1,6 @@
 # Payment & Webhook System Documentation
 
-This document explains the complete payment flow and webhook handling for the Budget Tracking application's subscription payment system using Razorpay.
+This document explains the complete payment flow and webhook handling for the FinFlow application's subscription payment system using Razorpay.
 
 ---
 

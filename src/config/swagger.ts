@@ -11,9 +11,20 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Budget Tracking API",
+      title: "FinFlow API",
       version: "1.0.0",
-      description: `API documentation for Budget Tracking Application
+      description: `**Enterprise-grade Financial Management Backend API**
+
+A production-ready RESTful API for personal finance management, built with Node.js, Express 5, TypeScript, and PostgreSQL.
+
+## Key Features
+
+- 🔐 **Secure Authentication** – OTP-based passwordless login & Google OAuth
+- 💰 **Transaction Tracking** – Income/expense management with categories
+- 📊 **Budget Planning** – Monthly budgets with category allocations
+- 📈 **Analytics & Insights** – Spending trends and budget comparisons
+- 💳 **Subscription Payments** – Razorpay integration with webhook support
+- 🖼️ **Avatar Uploads** – AWS S3 with pre-signed URLs
 
 ## Health Endpoints
 
@@ -26,7 +37,8 @@ Health check endpoints are mounted at \`/health\` (not under \`/api/v1\`):
 | GET | /health/ready | Readiness probe (checks DB + Redis) |
 | GET | /health/admin | Full diagnostics (Admin only, requires auth) |`,
       contact: {
-        name: "API Support",
+        name: "Anurag Sahu",
+        url: "https://github.com/anuragsahu-dev",
       },
     },
     servers: [
