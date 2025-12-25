@@ -20,6 +20,7 @@ import healthRouter from "./modules/health/health.route";
 
 import "./config/passport";
 import { swaggerSpec } from "./config/swagger";
+import { config } from "./config/config";
 
 import { globalLimiter } from "./middlewares/rateLimit.middleware";
 
@@ -71,7 +72,7 @@ app.use(cookieParser());
 // CORS Configuration
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: config.server.clientUrl,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "HEAD", "OPTIONS"],
     allowedHeaders: [
