@@ -1,6 +1,6 @@
 services:
   app:
-    image: as3305100/finflow-api:build-3d5536159c934140857d90adc03e7846e1d679ee
+    image: as3305100/finflow-api:build-28ea21e2dcda00165555217232bafead7a03a725
     deploy:
       replicas: 1
       update_config:
@@ -14,9 +14,9 @@ services:
       test:
         - CMD
         - wget
-        - "--no-verbose"
-        - "--tries=1"
-        - "--spider"
+        - '--no-verbose'
+        - '--tries=1'
+        - '--spider'
         - http://127.0.0.1:3000/health/live
       interval: 30s
       timeout: 10s
@@ -76,8 +76,8 @@ services:
         failure_action: rollback
         delay: 10s
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - caddy_data:/data
       - caddy_config:/config
