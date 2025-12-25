@@ -34,11 +34,10 @@ services:
       - NODE_ENV=production
       - CLIENT_URL=https://your-frontend-domain.com
       - APP_URL=https://your-api-domain.com
-      - FORGOT_PASSWORD_REDIRECT_URL=https://your-frontend-domain.com/reset-password
       # Auth
       - ACCESS_TOKEN_EXPIRY=15m
       - REFRESH_TOKEN_EXPIRY=7d
-      - SALT_ROUNDS=12
+      - SALT_ROUNDS=10
       # SMTP
       - SMTP_HOST=smtp.gmail.com
       - SMTP_PORT=587
@@ -50,7 +49,7 @@ services:
       - SMTP_PASS_FILE=/run/secrets/smtp_pass
       - GOOGLE_CLIENT_ID_FILE=/run/secrets/google_client_id
       - GOOGLE_CLIENT_SECRET_FILE=/run/secrets/google_client_secret
-      - GOOGLE_CALLBACK_URL_FILE=/run/secrets/google_callback_url
+      - GOOGLE_CALLBACK_URL_FILE=/run/secrets/google_callback_url_v2
       - RAZORPAY_KEY_ID_FILE=/run/secrets/razorpay_key_id
       - RAZORPAY_KEY_SECRET_FILE=/run/secrets/razorpay_key_secret
       - RAZORPAY_WEBHOOK_SECRET_FILE=/run/secrets/razorpay_webhook_secret
@@ -122,7 +121,7 @@ secrets:
     external: true
   google_client_secret:
     external: true
-  google_callback_url:
+  google_callback_url_v2:
     external: true
   razorpay_key_id:
     external: true
