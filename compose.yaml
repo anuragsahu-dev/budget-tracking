@@ -1,6 +1,6 @@
 services:
   app:
-    image: as3305100/finflow-api:build-28ea21e2dcda00165555217232bafead7a03a725
+    image: as3305100/finflow-api:build-077ee9b6208785d1ae70a7cbaff554938602d6ba
     deploy:
       replicas: 1
       update_config:
